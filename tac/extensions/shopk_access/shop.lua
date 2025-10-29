@@ -42,7 +42,7 @@ function shop_handler.startShop(tac)
                 term.setTextColor(colors.cyan)
                 print("Shop address: " .. data.address.address)
                 term.setTextColor(colors.lime)
-                print("Shop is now running! Send payments with metadata like 'sku=tenant.1;name=PlayerName'")
+                print("ShopK is now running!")
                 term.setTextColor(colors.white)
             else
                 term.setTextColor(colors.red)
