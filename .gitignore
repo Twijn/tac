@@ -1,0 +1,88 @@
+# ComputerCraft TAC (Access Control) System .gitignore
+
+# Runtime data and logs
+data/
+logs/
+*.log
+debug.log
+error.log
+
+# Configuration files with sensitive data
+config/private.lua
+config/secrets.lua
+**/private_key*
+**/secrets*
+
+# Settings and state files
+settings.json
+state.json
+status.json
+
+# Access control data
+cards.json
+doors.json
+access.json
+accesslog.json
+
+# Sales and transaction data
+sales.json
+transactions.json
+shopk_sales.json
+
+# User data and subscriptions
+subscriptions.json
+users.json
+members.json
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+.temp/
+
+# Backup files
+*.bak
+*.backup
+backup/
+backups/
+
+# Cache files
+cache/
+.cache/
+*.cache
+
+# Lock files
+*.lock
+.lock
+
+# Test files and directories
+test/
+tests/
+spec/
+*_test.lua
+*_spec.lua
+test_*.lua
+
+# IDE and editor files
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/.ropeproject
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+/lib
+
+.settings
