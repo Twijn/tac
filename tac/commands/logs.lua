@@ -3,6 +3,143 @@
 
 local LogsCommand = {}
 
+-- Shared function to display logs with pagination
+local function displayLogs(logs, filterType, tac)
+    if #logs == 0 then
+        print("No logs found.")
+        return
+    end
+    
+    local w, h = term.getSize()
+    local logsPerPage = h - 5  -- Reserve 5 lines for header/footer
+    local totalPages = math.ceil(#logs / logsPerPage)
+    local currentPage = 1
+    local scrollOffset = 0  -- Horizontal scroll offset
+    
+    local function getLogColor(logType)
+        if logType == "access_granted" then
+            return colors.green
+        elseif logType == "access_denied" then
+            return colors.red
+        elseif logType == "card_created" then
+            return colors.blue
+        elseif logType == "card_creation_cancelled" then
+            return colors.yellow
+        else
+            return colors.white
+        end
+    end
+    
+    local function formatLogLine(log)
+        local timestamp = tac.logger.formatTimestamp(log.timestamp)
+        local parts = {}
+        
+        -- Add type
+        table.insert(parts, log.type:upper())
+        
+        -- Add card info (condensed)
+        if log.card then
+            local cardName = log.card.name or "?"
+            if log.card.id then
+                local SecurityCore = require("tac.core.security")
+                cardName = cardName .. "(" .. SecurityCore.truncateCardId(log.card.id) .. ")"
+            end
+            table.insert(parts, cardName)
+        end
+        
+        -- Add door info
+        if log.door then
+            table.insert(parts, "@" .. (log.door.name or "?"))
+        end
+        
+        -- Add extra info
+        if log.matched_tag then
+            table.insert(parts, "tag:" .. log.matched_tag)
+        elseif log.reason then
+            table.insert(parts, log.reason)
+        end
+        
+        -- Format: [TIME] TYPE | Card(ID) | @Door | extra
+        return string.format("[%s] %s", timestamp, table.concat(parts, " | "))
+    end
+    
+    local function drawLogs()
+        term.setBackgroundColor(colors.black)
+        term.clear()
+        term.setCursorPos(1, 1)
+        
+        -- Header
+        term.setTextColor(colors.lightBlue)
+        local headerText = filterType and ("LOGS: " .. filterType:upper()) or "ACCESS LOGS"
+        print("========== " .. headerText .. " ==========")
+        term.setTextColor(colors.white)
+
+        print(string.format("Page %d/%d (%d total) | Arrows=Nav Q=Quit", currentPage, totalPages, #logs))
+        print(string.format("Scroll: +%d", scrollOffset))
+
+        term.setTextColor(colors.gray)
+        print(string.rep("-", w))
+        
+        -- Calculate which logs to show (newest first)
+        local startIdx = #logs - (currentPage - 1) * logsPerPage
+        local endIdx = math.max(startIdx - logsPerPage + 1, 1)
+        
+        -- Show logs (most recent first)
+        for i = startIdx, endIdx, -1 do
+            local log = logs[i]
+            if log then
+                term.setTextColor(getLogColor(log.type))
+                local fullLine = formatLogLine(log)
+                
+                -- Apply horizontal scrolling
+                local displayLine = fullLine
+                if scrollOffset > 0 then
+                    if #fullLine > scrollOffset then
+                        displayLine = fullLine:sub(scrollOffset + 1)
+                    else
+                        displayLine = ""
+                    end
+                end
+                
+                -- Truncate if too long
+                if #displayLine > w then
+                    displayLine = displayLine:sub(1, w - 3) .. "..."
+                end
+                
+                print(displayLine)
+            end
+        end
+        
+        -- Footer
+        term.setTextColor(colors.gray)
+        term.setCursorPos(1, h)
+        term.write(string.rep("-", w))
+    end
+    
+    drawLogs()
+    
+    -- Handle navigation
+    while true do
+        local event, key = os.pullEvent("key")
+        if key == keys.q then
+            sleep()
+            break
+        elseif key == keys.up and currentPage > 1 then
+            currentPage = currentPage - 1
+            drawLogs()
+        elseif key == keys.down and currentPage < totalPages then
+            currentPage = currentPage + 1
+            drawLogs()
+        elseif key == keys.left and scrollOffset > 0 then
+            scrollOffset = math.max(0, scrollOffset - 10)
+            drawLogs()
+        elseif key == keys.right then
+            scrollOffset = scrollOffset + 10
+            drawLogs()
+        end
+    end
+end
+
 function LogsCommand.create(tac)
     return {
         description = "View access logs with pretty UI",
@@ -19,114 +156,11 @@ function LogsCommand.create(tac)
             
             if cmd == "view" then
                 local logs = tac.logger.getAllLogs()
-                
                 if #logs == 0 then
                     d.mess("No access logs found.")
                     return
                 end
-                
-                local logsPerPage = 15
-                local totalPages = math.ceil(#logs / logsPerPage)
-                local currentPage = 1
-                
-                local function getLogColor(logType)
-                    if logType == "access_granted" then
-                        return colors.green
-                    elseif logType == "access_denied" then
-                        return colors.red
-                    elseif logType == "card_created" then
-                        return colors.blue
-                    elseif logType == "card_creation_cancelled" then
-                        return colors.yellow
-                    else
-                        return colors.white
-                    end
-                end
-                
-                local function drawLogs()
-                    term.setBackgroundColor(colors.black)
-                    term.clear()
-                    term.setCursorPos(1, 1)
-                    
-                    -- Header
-                    term.setTextColor(colors.lightBlue)
-                    print("========== ACCESS LOGS ==========")
-                    term.setTextColor(colors.white)
-                    print(string.format("Page %d of %d (%d total logs)", currentPage, totalPages, #logs))
-                    print("^ = Previous | v = Next | q = Quit")
-                    print("")
-                    
-                    -- Calculate which logs to show
-                    local startIdx = (currentPage - 1) * logsPerPage + 1
-                    local endIdx = math.min(startIdx + logsPerPage - 1, #logs)
-                    
-                    -- Show logs (most recent first) - condensed format
-                    for i = endIdx, startIdx, -1 do
-                        local log = logs[i]
-                        if log then
-                            local timestamp = tac.logger.formatTimestamp(log.timestamp)
-                            local cardInfo = ""
-                            local doorInfo = ""
-                            local extraInfo = ""
-                            
-                            -- Build condensed card info
-                            if log.card then
-                                cardInfo = (log.card.name or "Unknown")
-                                if log.card.id then
-                                    local SecurityCore = require("tac.core.security")
-                                    cardInfo = cardInfo .. "(" .. SecurityCore.truncateCardId(log.card.id) .. ")"
-                                end
-                            end
-                            
-                            -- Build condensed door info
-                            if log.door then
-                                doorInfo = log.door.name or "Unknown"
-                            end
-                            
-                            -- Build extra info (reason/matched_tag)
-                            if log.matched_tag then
-                                extraInfo = "via:" .. log.matched_tag
-                            elseif log.reason then
-                                extraInfo = "(" .. log.reason .. ")"
-                            end
-                            
-                            -- Single line format: [TIME] TYPE | Card:NAME(ID) | Door:NAME | Extra
-                            term.setTextColor(getLogColor(log.type))
-                            local line = string.format("[%s] %s", timestamp, log.type:upper())
-                            
-                            if cardInfo ~= "" then
-                                line = line .. " | " .. cardInfo
-                            end
-                            
-                            if doorInfo ~= "" then
-                                line = line .. " | " .. doorInfo
-                            end
-                            
-                            if extraInfo ~= "" then
-                                line = line .. " " .. extraInfo
-                            end
-                            
-                            print(line)
-                        end
-                    end
-                end
-                
-                drawLogs()
-                
-                -- Handle navigation
-                while true do
-                    local event, key = os.pullEvent("key")
-                    if key == keys.q then
-                        sleep()
-                        break
-                    elseif key == keys.up and currentPage > 1 then
-                        currentPage = currentPage - 1
-                        drawLogs()
-                    elseif key == keys.down and currentPage < totalPages then
-                        currentPage = currentPage + 1
-                        drawLogs()
-                    end
-                end
+                displayLogs(logs, nil, tac)
                 
             elseif cmd == "clear" then
                 d.mess("Are you sure you want to clear all access logs? (y/N)")
@@ -169,14 +203,7 @@ function LogsCommand.create(tac)
                     return
                 end
                 
-                d.mess(string.format("Found %d logs of type '%s':", #filteredLogs, filterType))
-                for i = math.max(1, #filteredLogs - 9), #filteredLogs do
-                    local log = filteredLogs[i]
-                    if log then
-                        local timestamp = os.date("%Y-%m-%d %H:%M:%S", log.timestamp / 1000)
-                        print(string.format("[%s] %s", timestamp, log.message))
-                    end
-                end
+                displayLogs(filteredLogs, filterType, tac)
                 
             else
                 d.err("Unknown logs command! Use: view, clear, filter, or stats")
