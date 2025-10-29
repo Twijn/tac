@@ -142,6 +142,7 @@ end
 
 function LogsCommand.create(tac)
     return {
+        name = "logs",
         description = "View access logs with pretty UI",
         complete = function(args)
             if #args == 1 then

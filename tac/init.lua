@@ -32,7 +32,9 @@ function TAC.new(config)
             afterCommand = {},
             beforeShutdown = {}
         },
-        backgroundProcesses = {}
+        backgroundProcesses = {},
+        processStatus = {},  -- Track status of background processes
+        disabledProcesses = {}  -- Track disabled processes
     }
     
     -- Initialize required dependencies
@@ -96,6 +98,49 @@ function TAC.new(config)
     -- @param processFunction function - function to run in parallel
     function instance.registerBackgroundProcess(name, processFunction)
         instance.backgroundProcesses[name] = processFunction
+        instance.processStatus[name] = {
+            status = "registered",
+            startTime = nil,
+            lastError = nil,
+            restartCount = 0
+        }
+    end
+    
+    --- Disable a background process
+    -- @param name string - process name
+    function instance.disableBackgroundProcess(name)
+        if instance.backgroundProcesses[name] then
+            instance.disabledProcesses[name] = true
+            if instance.processStatus[name] then
+                instance.processStatus[name].status = "disabled"
+            end
+            return true
+        end
+        return false
+    end
+    
+    --- Enable a background process
+    -- @param name string - process name
+    function instance.enableBackgroundProcess(name)
+        if instance.backgroundProcesses[name] then
+            instance.disabledProcesses[name] = nil
+            if instance.processStatus[name] then
+                instance.processStatus[name].status = "enabled"
+            end
+            return true
+        end
+        return false
+    end
+    
+    --- Get process status
+    -- @param name string - process name (optional, returns all if nil)
+    -- @return table - status information
+    function instance.getProcessStatus(name)
+        if name then
+            return instance.processStatus[name]
+        else
+            return instance.processStatus
+        end
     end
     
     --- Execute hooks
@@ -304,16 +349,43 @@ function TAC.new(config)
     
     --- Command line interface loop
     function instance.commandLoop()
-        -- Load built-in commands
-        local doorCmd = require("tac.commands.door")
-        local cardCmd = require("tac.commands.card")
-        local logsCmd = require("tac.commands.logs")
-        local modulesCmd = require("tac.commands.modules")
-
-        instance.registerCommand("door", doorCmd.create(instance))
-        instance.registerCommand("card", cardCmd.create(instance))
-        instance.registerCommand("logs", logsCmd.create(instance))
-        instance.registerCommand("modules", modulesCmd.create(instance))
+        -- Dynamically load commands from commands directory
+        local commandsDir = "tac/commands"
+        local success, files = pcall(fs.list, commandsDir)
+        
+        if success then
+            for _, filename in ipairs(files) do
+                -- Only load .lua files
+                if filename:match("%.lua$") and not fs.isDir(commandsDir .. "/" .. filename) then
+                    local cmdName = filename:gsub("%.lua$", "")  -- Remove .lua extension
+                    
+                    local loadSuccess, cmdModule = pcall(require, commandsDir .. "." .. cmdName)
+                    if loadSuccess then
+                        -- Check if module has a create function
+                        if type(cmdModule.create) == "function" then
+                            local createSuccess, cmdDef = pcall(cmdModule.create, instance)
+                            if createSuccess and cmdDef then
+                                -- Use the name from the command definition if available, otherwise use filename
+                                local commandName = cmdDef.name or cmdName
+                                instance.registerCommand(commandName, cmdDef)
+                            else
+                                term.setTextColor(colors.red)
+                                print("Warning: Failed to create command '" .. cmdName .. "': " .. tostring(cmdDef))
+                                term.setTextColor(colors.white)
+                            end
+                        else
+                            term.setTextColor(colors.yellow)
+                            print("Warning: Command module '" .. cmdName .. "' has no create function")
+                            term.setTextColor(colors.white)
+                        end
+                    else
+                        term.setTextColor(colors.red)
+                        print("Warning: Failed to load command '" .. cmdName .. "': " .. tostring(cmdModule))
+                        term.setTextColor(colors.white)
+                    end
+                end
+            end
+        end
 
         local shutdownCmd = function(args, d)
             instance.shutdown()
@@ -399,13 +471,32 @@ function TAC.new(config)
         
         -- Add all registered background processes
         for name, processFunc in pairs(instance.backgroundProcesses) do
-            print("Starting background process: " .. name)
-            table.insert(processes, function()
-                local success, err = pcall(processFunc, instance)
-                if not success then
-                    printError("Background process '" .. name .. "' error: " .. tostring(err))
-                end
-            end)
+            -- Skip disabled processes
+            if not instance.disabledProcesses[name] then
+                print("Starting background process: " .. name)
+                table.insert(processes, function()
+                    -- Mark as running
+                    if instance.processStatus[name] then
+                        instance.processStatus[name].status = "running"
+                        instance.processStatus[name].startTime = os.epoch("utc")
+                    end
+                    
+                    local success, err = pcall(processFunc, instance)
+                    
+                    -- Update status
+                    if instance.processStatus[name] then
+                        if not success then
+                            instance.processStatus[name].status = "crashed"
+                            instance.processStatus[name].lastError = tostring(err)
+                            printError("Background process '" .. name .. "' error: " .. tostring(err))
+                        else
+                            instance.processStatus[name].status = "stopped"
+                        end
+                    end
+                end)
+            else
+                print("Skipping disabled process: " .. name)
+            end
         end
         
         -- Run all processes in parallel with interrupt handling

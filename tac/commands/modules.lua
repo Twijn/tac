@@ -2,6 +2,7 @@ local ModulesCommand = {}
 
 function ModulesCommand.create(tac)
     return {
+        name = "modules",
         description = "List and manage TAC modules",
         complete = function(args)
             if #args == 1 then

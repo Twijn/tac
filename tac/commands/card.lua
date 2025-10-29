@@ -8,7 +8,8 @@ function CardCommand.create(tac)
     local SecurityCore = tac.Security or require("tac.core.security")
     
     return {
-        description = "Manage NFC cards",
+        name = "card",
+        description = "Manage access cards",
         complete = function(args)
             if #args == 1 then
                 return {"grant", "revoke", "list", "edit"}

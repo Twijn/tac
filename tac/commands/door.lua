@@ -9,6 +9,7 @@ function DoorCommand.create(tac)
     local HardwareManager = tac.Hardware or require("tac.core.hardware")
     
     return {
+        name = "door",
         description = "Control, manage, and add doors",
         complete = function(args)
             if #args == 1 then
