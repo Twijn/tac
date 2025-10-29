@@ -308,10 +308,12 @@ function TAC.new(config)
         local doorCmd = require("tac.commands.door")
         local cardCmd = require("tac.commands.card")
         local logsCmd = require("tac.commands.logs")
-        
+        local modulesCmd = require("tac.commands.modules")
+
         instance.registerCommand("door", doorCmd.create(instance))
         instance.registerCommand("card", cardCmd.create(instance))
         instance.registerCommand("logs", logsCmd.create(instance))
+        instance.registerCommand("modules", modulesCmd.create(instance))
 
         local shutdownCmd = function(args, d)
             instance.shutdown()
@@ -327,6 +329,15 @@ function TAC.new(config)
         instance.registerCommand("exit", {
             description = "Exit TAC (alias for shutdown)",
             execute = shutdownCmd
+        })
+
+        instance.registerCommand("reboot", {
+            description = "Reboot the computer",
+            execute = function(args, d)
+                d.mess("Rebooting computer...")
+                sleep()
+                os.reboot()
+            end
         })
 
         -- Wait a couple of seconds to allow system to complete initialization
