@@ -350,13 +350,13 @@ function TAC_INSTALLER.fullInstall(selectedModules)
     term.setTextColor(colors.white)
     print()
     print("You can now run 'startup' to start the TAC system.")
-    print("Use 'lua installer.lua --help' for more options.")
+    print("Use 'installer.lua --help' for more options.")
 end
 
 -- Command line interface
 local function showHelp()
     print("TAC Installer v" .. TAC_INSTALLER.version)
-    print("Usage: lua installer.lua [command] [options]")
+    print("Usage: installer [command] [options]")
     print()
     print("Commands:")
     print("  install              - Full installation with module selection")
@@ -368,10 +368,10 @@ local function showHelp()
     print("  --help, -h           - Show this help")
     print()
     print("Examples:")
-    print("  lua installer.lua install")
-    print("  lua installer.lua install-libs")
-    print("  lua installer.lua install-module shopk_access")
-    print("  lua installer.lua remove-module shop_monitor")
+    print("  installer install")
+    print("  installer install-libs")
+    print("  installer install-module shopk_access")
+    print("  installer remove-module shop_monitor")
 end
 
 -- Main execution

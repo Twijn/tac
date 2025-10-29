@@ -7,7 +7,7 @@ A comprehensive, modular access control system for ComputerCraft that provides s
 **One-line installer command:**
 **One-line installer command:**
 ```bash
-wget https://raw.githubusercontent.com/Twijn/tac/main/installer.lua && lua installer.lua
+wget run https://raw.githubusercontent.com/Twijn/tac/main/installer.lua
 ```
 
 ## Features
