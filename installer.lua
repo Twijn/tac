@@ -46,7 +46,7 @@ local TAC_INSTALLER = {
         "formui.lua",
         "persist.lua",
         "s.lua",
-        "shopk/shopk.lua",
+        "shopk.lua",
         "tables.lua"
     },
     
