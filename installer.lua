@@ -150,45 +150,15 @@ local function downloadFile(url, path, filename)
     return true
 end
 
--- Create default data files
-local function createDataFiles()
-    if not fs.exists("data") then
-        fs.makeDir("data")
-    end
-    
-    -- Default settings
-    if not fs.exists("data/settings.json") then
-        local settings = {
-            system_name = "TAC Access Control",
-            version = "1.0.0",
-            auto_lock_timeout = 30,
-            require_card_for_commands = false
-        }
-        local file = fs.open("data/settings.json", "w")
-        file.write(textutils.serialiseJSON(settings))
-        file.close()
-    end
-    
-    -- Default empty files
-    local emptyFiles = {"data/cards.json", "data/doors.json", "data/accesslog.json"}
-    for _, filename in ipairs(emptyFiles) do
-        if not fs.exists(filename) then
-            local file = fs.open(filename, "w")
-            file.write("{}")
-            file.close()
-        end
-    end
-end
-
 -- Main installation functions
-function TAC_INSTALLER.installLibraries()
-    print("Installing library files from GitHub (cc-misc/util)...")
-    
-    local total = #TAC_INSTALLER.lib_files
-    for i, filename in ipairs(TAC_INSTALLER.lib_files) do
+function TAC_INSTALLER.install(type, files, baseUrl)
+    print("Installing " .. type .. " files from GitHub (" .. baseUrl .. ")...")
+
+    local total = #files
+    for i, filename in ipairs(files) do
         drawProgressBar(i - 1, total, filename)
-        
-        local url = TAC_INSTALLER.github.lib_base_url .. "/" .. filename
+
+        local url = baseUrl .. "/" .. filename
         local path = "lib/" .. filename
         
         downloadFile(url, path, filename)
@@ -198,32 +168,16 @@ function TAC_INSTALLER.installLibraries()
     drawProgressBar(total, total, "Complete!")
     print("\n")
     term.setTextColor(colors.lime)
-    print("Library files installed successfully!")
+    print(type .. " files installed successfully!")
     term.setTextColor(colors.white)
 end
 
+function TAC_INSTALLER.installLibraries()
+    TAC_INSTALLER.install("Library", TAC_INSTALLER.lib_files, TAC_INSTALLER.github.lib_base_url)
+end
+
 function TAC_INSTALLER.installCore()
-    print("Installing TAC core files from GitHub (Twijn/tac)...")
-    
-    local total = #TAC_INSTALLER.core_files
-    for i, filename in ipairs(TAC_INSTALLER.core_files) do
-        drawProgressBar(i - 1, total, filename)
-        
-        local url = TAC_INSTALLER.github.tac_base_url .. "/" .. filename
-        local path = filename
-        
-        downloadFile(url, path, filename)
-        sleep(0.1) -- Small delay for visual feedback
-    end
-    
-    drawProgressBar(total, total, "Complete!")
-    print("\n")
-    
-    createDataFiles()
-    
-    term.setTextColor(colors.lime)
-    print("TAC core installation complete!")
-    term.setTextColor(colors.white)
+    TAC_INSTALLER.install("Core", TAC_INSTALLER.core_files, TAC_INSTALLER.github.tac_base_url)
 end
 
 function TAC_INSTALLER.installModule(moduleName)
