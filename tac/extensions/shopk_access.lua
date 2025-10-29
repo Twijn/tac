@@ -4,7 +4,7 @@
 
 local ShopKAccessExtension = {
     name = "shopk_access",
-    version = "1.0.0",
+    version = "1.0.1",
     description = "Sell access tags via ShopK/Kromer payments"
 }
 
