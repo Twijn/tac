@@ -2,7 +2,7 @@
 -- Main package interface for the access control system
 
 local TAC = {
-    version = "1.0.1",
+    version = "1.1.0",
     name = "tAC"
 }
 
