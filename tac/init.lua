@@ -39,6 +39,7 @@ function TAC.new(config)
     local persist = require("persist")
     local formui = require("formui")
     local cmd = require("cmd")
+    local tables = require("tables")
     
     -- Initialize storage
     instance.settings = persist("settings.json")
@@ -142,16 +143,7 @@ function TAC.new(config)
             
             -- Prompt for missing settings
             if #missing > 0 then
-                if d and d.mess then
-                    d.mess("Extension '" .. extName .. "' needs configuration:")
-                else
-                    term.setTextColor(colors.yellow)
-                    print("Extension '" .. extName .. "' needs configuration:")
-                    term.setTextColor(colors.white)
-                end
-                
                 local form = formui.new(config.title or ("Configure " .. extName))
-                local results = {}
                 
                 for _, setting in ipairs(missing) do
                     if setting.type == "text" then
@@ -320,25 +312,25 @@ function TAC.new(config)
         instance.registerCommand("door", doorCmd.create(instance))
         instance.registerCommand("card", cardCmd.create(instance))
         instance.registerCommand("logs", logsCmd.create(instance))
+
+        local shutdownCmd = function(args, d)
+            instance.shutdown()
+            error("shutdown") -- This will break out of the command loop
+        end
         
         -- Add shutdown command
         instance.registerCommand("shutdown", {
             description = "Shutdown TAC gracefully",
-            complete = function(args) return {} end,
-            execute = function(args, d)
-                instance.shutdown()
-                error("shutdown") -- This will break out of the command loop
-            end
+            execute = shutdownCmd
         })
         
         instance.registerCommand("exit", {
             description = "Exit TAC (alias for shutdown)",
-            complete = function(args) return {} end,
-            execute = function(args, d)
-                instance.shutdown()
-                error("shutdown") -- This will break out of the command loop
-            end
+            execute = shutdownCmd
         })
+
+        -- Wait a couple of seconds to allow system to complete initialization
+        sleep(2)
         
         -- Execute command interface
         cmd(TAC.name, TAC.version, instance.commands)
@@ -350,15 +342,11 @@ function TAC.new(config)
         TAC.Hardware.updateAllSigns(instance.doors)
         
         -- Print status information
-        local doorCount = 0
-        local cardCount = 0
+        local doorCount = tables.count(instance.doors.getAll())
+        local cardCount = tables.count(instance.cards.getAll())
         
-        for _ in pairs(instance.doors.getAll()) do doorCount = doorCount + 1 end
-        term.setTextColor(colors.lime)
+        term.setTextColor(colors.lightBlue)
         print("Doors loaded: " .. doorCount)
-        term.setTextColor(colors.white)
-        
-        for _ in pairs(instance.cards.getAll()) do cardCount = cardCount + 1 end
         term.setTextColor(colors.lime)
         print("Cards loaded: " .. cardCount)
         term.setTextColor(colors.white)
@@ -404,9 +392,7 @@ function TAC.new(config)
             table.insert(processes, function()
                 local success, err = pcall(processFunc, instance)
                 if not success then
-                    term.setTextColor(colors.red)
-                    print("Background process '" .. name .. "' error: " .. tostring(err))
-                    term.setTextColor(colors.white)
+                    printError("Background process '" .. name .. "' error: " .. tostring(err))
                 end
             end)
         end
@@ -458,7 +444,7 @@ function TAC.loadExtensions(instance)
     -- Try to iterate through extension files
     -- Note: In CC:Tweaked, we need to use fs.list() to discover files
     local success, files = pcall(fs.list, "tac/extensions")
-    
+
     if not success then
         return
     end
