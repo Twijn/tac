@@ -117,7 +117,7 @@ After installation, your system will have the following structure:
 
 1. **Install the system:**
    ```bash
-   wget https://raw.githubusercontent.com/Twijn/tac/main/installer.lua && lua installer.lua
+   wget run https://raw.githubusercontent.com/Twijn/tac/main/installer.lua
    ```
 
 2. **Start the system:**
