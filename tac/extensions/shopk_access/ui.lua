@@ -170,7 +170,7 @@ function ui.addTierForm(tac, d)
     form:text("Tier Name", "", FormUI.validation.string_nonempty)
     form:label("Pattern: e.g., 'apartment.*', 'shop.*', 'premium.*'")
     form:text("Pattern", "", FormUI.validation.string_nonempty)
-    form:select("Category", {"residential", "commercial", "premium", "special"}, "residential")
+    form:select("Category", {"residential", "commercial", "premium", "special"}, 1)
     form:label("Description: Brief description of what this tier provides")
     form:text("Description", "", FormUI.validation.string_nonempty)
     
@@ -190,8 +190,8 @@ function ui.addTierForm(tac, d)
     
     -- Policies
     form:label("=== Policies ===")
-    form:select("Refund Policy", {"none", "prorated", "full"}, "prorated")
-    form:select("Auto Renewal", {"true", "false"}, "false")
+    form:select("Refund Policy", {"none", "prorated", "full"}, 2)
+    form:select("Auto Renewal", {"true", "false"}, 2)
     
     -- Features (simplified for now)
     form:label("=== Features (Optional) ===")

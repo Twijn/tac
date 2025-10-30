@@ -19,8 +19,7 @@ function shop_handler.startShop(tac)
     local shopk = require("lib.shopk")
     
     shop = shopk({
-        privatekey = ACCESS_CONFIG.private_key,
-        syncNode = 'https://kromer.herrkatze.com/api/krist/'
+        privatekey = ACCESS_CONFIG.private_key
     })
 
     -- Set up transaction handler immediately
