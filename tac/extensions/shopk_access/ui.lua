@@ -194,11 +194,12 @@ function ui.addTierForm(tac, d)
     form:select("Auto Renewal", {"true", "false"}, 2)
     
     -- Features (simplified for now)
+    local function clrValidator() return true end
     form:label("=== Features (Optional) ===")
-    form:text("Feature 1", "")
-    form:text("Feature 2", "")
-    form:text("Feature 3", "")
-    
+    form:text("Feature 1", "", clrValidator)
+    form:text("Feature 2", "", clrValidator)
+    form:text("Feature 3", "", clrValidator)
+
     local result = form:run()
     
     if result then
