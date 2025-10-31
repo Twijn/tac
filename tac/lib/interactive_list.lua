@@ -6,7 +6,7 @@
     
     @module tac.lib.interactive_list
     @author Twijn
-    @version 1.0.0
+    @version 1.0.1
     
     @example
     local interactiveList = require("tac.lib.interactive_list")
@@ -52,6 +52,7 @@ function interactiveList.show(options)
     
     local selectedIndex = 1
     local scrollOffset = 0
+    local detailsScrollOffset = 0
     local showingDetails = false
     local selectedItems = {}
     
@@ -133,9 +134,9 @@ function interactiveList.show(options)
                 print(string.rep("-", w))
                 term.setTextColor(colors.lightGray)
                 if allowMultiSelect then
-                    print("↑↓: Navigate | Space: Select | →: Details | Enter: Confirm | Q: Cancel")
+                    print("Up/Down: Navigate | Space: Select | Right: Details | Enter: Confirm | Q: Cancel")
                 else
-                    print("↑↓: Navigate | →: Details | Enter: Select | Q: Cancel")
+                    print("Up/Down: Navigate | Right: Details | Enter: Select | Q: Cancel")
                 end
             end
             
@@ -144,11 +145,11 @@ function interactiveList.show(options)
                 term.setCursorPos(w, 4)
                 term.setTextColor(colors.gray)
                 if scrollOffset > 0 then
-                    print("↑")
+                    print("^")
                 end
                 term.setCursorPos(w, h - 3)
                 if scrollOffset + maxVisible < #items then
-                    print("↓")
+                    print("v")
                 end
             end
             
@@ -162,24 +163,50 @@ function interactiveList.show(options)
             print(string.rep("-", w))
             term.setTextColor(colors.white)
             
+            -- Collect detail lines
+            local detailLines = {}
             if formatDetails then
                 local details = formatDetails(item)
                 if type(details) == "table" then
-                    for _, line in ipairs(details) do
-                        print(line)
-                    end
+                    detailLines = details
                 else
-                    print(tostring(details))
+                    detailLines = {tostring(details)}
                 end
             else
                 -- Default detail view: pretty-print the item
-                print("Item: " .. formatItem(item))
+                table.insert(detailLines, "Item: " .. formatItem(item))
                 if type(item) == "table" then
                     for k, v in pairs(item) do
                         if k ~= "name" and k ~= "title" then
-                            print("  " .. k .. ": " .. tostring(v))
+                            table.insert(detailLines, "  " .. k .. ": " .. tostring(v))
                         end
                     end
+                end
+            end
+            
+            -- Calculate visible area for details
+            local headerLines = 3 -- Title + separator
+            local footerLines = 2 -- Separator + help
+            local maxVisibleDetails = h - headerLines - footerLines
+            
+            -- Render visible detail lines with scrolling
+            for i = 1, maxVisibleDetails do
+                local lineIndex = detailsScrollOffset + i
+                if lineIndex <= #detailLines then
+                    print(detailLines[lineIndex])
+                end
+            end
+            
+            -- Show scroll indicators for details
+            if #detailLines > maxVisibleDetails then
+                term.setCursorPos(w, 4)
+                term.setTextColor(colors.gray)
+                if detailsScrollOffset > 0 then
+                    print("^")
+                end
+                term.setCursorPos(w, h - 2)
+                if detailsScrollOffset + maxVisibleDetails < #detailLines then
+                    print("v")
                 end
             end
             
@@ -188,7 +215,7 @@ function interactiveList.show(options)
             term.setTextColor(colors.gray)
             print(string.rep("-", w))
             term.setTextColor(colors.lightGray)
-            print("←: Back to list | Q: Cancel")
+            print("Up/Down: Scroll | Left: Back to list | Q: Cancel")
         end
         
         term.setTextColor(colors.white)
@@ -202,20 +229,45 @@ function interactiveList.show(options)
         local event, key = os.pullEvent("key")
         
         if key == keys.up then
-            if not showingDetails and selectedIndex > 1 then
+            if showingDetails then
+                -- Scroll details up
+                if detailsScrollOffset > 0 then
+                    detailsScrollOffset = detailsScrollOffset - 1
+                end
+            elseif selectedIndex > 1 then
                 selectedIndex = selectedIndex - 1
             end
         elseif key == keys.down then
-            if not showingDetails and selectedIndex < #items then
+            if showingDetails then
+                -- Scroll details down
+                local item = items[selectedIndex]
+                local detailLines = {}
+                if formatDetails then
+                    local details = formatDetails(item)
+                    if type(details) == "table" then
+                        detailLines = details
+                    else
+                        detailLines = {tostring(details)}
+                    end
+                end
+                
+                local _, h = getScreenDimensions()
+                local maxVisibleDetails = h - 5 -- Header + footer lines
+                if detailsScrollOffset + maxVisibleDetails < #detailLines then
+                    detailsScrollOffset = detailsScrollOffset + 1
+                end
+            elseif selectedIndex < #items then
                 selectedIndex = selectedIndex + 1
             end
         elseif key == keys.right then
             if not showingDetails and formatDetails then
                 showingDetails = true
+                detailsScrollOffset = 0 -- Reset scroll when entering details
             end
         elseif key == keys.left then
             if showingDetails then
                 showingDetails = false
+                detailsScrollOffset = 0 -- Reset scroll when leaving details
             end
         elseif key == keys.enter then
             if allowMultiSelect then
