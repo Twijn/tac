@@ -1,8 +1,8 @@
 {
   "tac": {
-    "version": "1.4.1",
+    "version": "1.4.3",
     "init": {
-      "version": "1.4.1",
+      "version": "1.4.3",
       "path": "tac/init.lua",
       "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/init.lua"
     },
@@ -72,7 +72,7 @@
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shop_monitor.lua"
       },
       "shopk_access": {
-        "version": "1.1.0",
+        "version": "1.2.0",
         "path": "tac/extensions/shopk_access.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_access.lua"
       },
