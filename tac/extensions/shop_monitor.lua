@@ -7,7 +7,7 @@
     
     @module tac.extensions.shop_monitor
     @author Twijn
-    @version 1.0.3
+    @version 1.0.4
     
     @example
     -- This extension is loaded automatically by TAC.
@@ -30,7 +30,7 @@
 
 local ShopMonitorExtension = {
     name = "shop_monitor",
-    version = "1.0.3",
+    version = "1.0.4",
     description = "Display available shop items on a monitor",
     author = "Twijn",
     dependencies = {},
@@ -432,6 +432,11 @@ function ShopMonitorExtension.init(tac)
             -- Check if monitor UI is in use (showing interactive screens)
             local monitor_ui = tac.extensions.shopk_access and tac.extensions.shopk_access.monitor_ui
             local isMonitorBusy = monitor_ui and monitor_ui.isInUse and monitor_ui.isInUse()
+            
+            -- Debug: Log when monitor is busy
+            if isMonitorBusy and MONITOR_CONFIG.debug then
+                print("[shop_monitor] Monitor UI is busy, skipping update")
+            end
             
             if not isMonitorBusy then
                 -- Force monitor detection every time

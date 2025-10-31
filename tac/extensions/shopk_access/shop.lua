@@ -27,6 +27,11 @@ local nfcWriteState = persist("nfc_write_state.json")
 -- @param transaction table - original transaction
 -- @param errorMessage string - error description
 local function refundWithError(transaction, errorMessage)
+    -- Unlock monitor so shop_monitor can resume updates
+    if monitor_ui.isAvailable() then
+        monitor_ui.unlock()
+    end
+    
     term.setTextColor(colors.yellow)
     print("Issuing refund: " .. errorMessage)
     term.setTextColor(colors.white)
@@ -59,22 +64,29 @@ function shop_handler.resumePendingWrites(tac)
         print("Type: New Subscription")
         print("Player: " .. pendingWrite.username)
         print("Slot: " .. pendingWrite.slot)
+        print("Resuming with card ID: " .. (pendingWrite.cardId or "unknown"))
+        -- Pass the existing cardId to resume
         shop_handler.writeNFCCard(tac, {
             username = pendingWrite.username,
             slot = pendingWrite.slot,
             tier = pendingWrite.tier,
-            transaction = pendingWrite.transaction
+            transaction = pendingWrite.transaction,
+            resumeCardId = pendingWrite.cardId  -- Use existing card ID
         })
     elseif pendingWrite.type == "renewal" then
         print("Type: Renewal")
         print("Player: " .. pendingWrite.username)
         print("Access: " .. pendingWrite.accessTag)
+        print("Resuming with card ID: " .. (pendingWrite.cardId or "unknown"))
+        -- Pass the existing cardId to resume
         shop_handler.writeRenewalNFCCard(tac, {
             username = pendingWrite.username,
             accessTag = pendingWrite.accessTag,
             tier = pendingWrite.tier,
             transaction = pendingWrite.transaction,
-            originalCard = pendingWrite.originalCard
+            originalCard = pendingWrite.originalCard,
+            resumeCardId = pendingWrite.cardId,  -- Use existing card ID
+            resumeExpiration = pendingWrite.newExpiration  -- Use calculated expiration
         })
     end
 end
@@ -203,6 +215,11 @@ end
 -- @param tac table - TAC instance
 -- @param transaction table - transaction data
 function shop_handler.handleTransaction(tac, transaction)
+    -- Lock monitor immediately to prevent shop_monitor from overwriting transaction screens
+    if monitor_ui.isAvailable() then
+        monitor_ui.lock()
+    end
+    
     term.setTextColor(colors.yellow)
     print("Received transaction: " .. transaction.value .. " KRO from " .. transaction.from)
     term.setTextColor(colors.white)
@@ -602,23 +619,30 @@ function shop_handler.writeNFCCard(tac, options)
     local tier = options.tier
     local transaction = options.transaction
     
-    -- Generate card ID using TAC security core
+    -- Generate card ID or use resumed one
     local SecurityCore = require("tac.core.security")
-    local cardId = SecurityCore.randomString(128)
+    local cardId = options.resumeCardId or SecurityCore.randomString(128)
+    local isResume = options.resumeCardId ~= nil
     
-    -- Persist write state before starting
-    nfcWriteState.set("active", {
-        type = "new_subscription",
-        cardId = cardId,
-        username = username,
-        slot = slot,
-        tier = tier,
-        transaction = transaction,
-        startTime = os.epoch("utc")
-    })
+    -- Only persist state if this is a new write (not a resume)
+    if not isResume then
+        nfcWriteState.set("active", {
+            type = "new_subscription",
+            cardId = cardId,
+            username = username,
+            slot = slot,
+            tier = tier,
+            transaction = transaction,
+            startTime = os.epoch("utc")
+        })
+    end
     
     term.setTextColor(colors.yellow)
-    print("Generated card ID: " .. SecurityCore.truncateCardId(cardId))
+    if isResume then
+        print("Resuming NFC write for card ID: " .. SecurityCore.truncateCardId(cardId))
+    else
+        print("Generated card ID: " .. SecurityCore.truncateCardId(cardId))
+    end
     print("")
     print("Please place a blank NFC card on the server NFC reader...")
     print("Press 'q' to cancel the card writing process.")
@@ -791,31 +815,44 @@ function shop_handler.writeRenewalNFCCard(tac, options)
     local transaction = options.transaction
     local originalCard = options.originalCard
     
-    -- Generate new card ID
+    -- Generate new card ID or use resumed one
     local SecurityCore = require("tac.core.security")
-    local newCardId = SecurityCore.randomString(128)
+    local newCardId = options.resumeCardId or SecurityCore.randomString(128)
+    local isResume = options.resumeCardId ~= nil
     
-    -- Calculate new expiration (extend from current expiration or now, whichever is later)
-    local currentExpiration = originalCard.expiration or os.epoch("utc")
-    local baseTime = math.max(currentExpiration, os.epoch("utc"))
-    local newExpiration = baseTime + (tier.duration * 24 * 60 * 60 * 1000)
+    -- Calculate new expiration or use resumed one
+    local newExpiration
+    if options.resumeExpiration then
+        newExpiration = options.resumeExpiration
+    else
+        local currentExpiration = originalCard.expiration or os.epoch("utc")
+        local baseTime = math.max(currentExpiration, os.epoch("utc"))
+        newExpiration = baseTime + (tier.duration * 24 * 60 * 60 * 1000)
+    end
     
-    -- Persist write state before starting
-    nfcWriteState.set("active", {
-        type = "renewal",
-        cardId = newCardId,
-        username = username,
-        accessTag = accessTag,
-        tier = tier,
-        transaction = transaction,
-        originalCard = originalCard,
-        newExpiration = newExpiration,
-        startTime = os.epoch("utc")
-    })
+    -- Only persist state if this is a new write (not a resume)
+    if not isResume then
+        nfcWriteState.set("active", {
+            type = "renewal",
+            cardId = newCardId,
+            username = username,
+            accessTag = accessTag,
+            tier = tier,
+            transaction = transaction,
+            originalCard = originalCard,
+            newExpiration = newExpiration,
+            startTime = os.epoch("utc")
+        })
+    end
     
     term.setTextColor(colors.yellow)
-    print("Writing new NFC card for renewal...")
-    print("New Card ID: " .. SecurityCore.truncateCardId(newCardId))
+    if isResume then
+        print("Resuming NFC write for renewal...")
+        print("Resuming Card ID: " .. SecurityCore.truncateCardId(newCardId))
+    else
+        print("Writing new NFC card for renewal...")
+        print("New Card ID: " .. SecurityCore.truncateCardId(newCardId))
+    end
     print("New Expiration: " .. utils.formatExpiration(newExpiration))
     print("")
     print("Please place a blank NFC card on the server NFC reader...")

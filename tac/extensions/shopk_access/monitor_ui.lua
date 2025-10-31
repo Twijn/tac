@@ -23,6 +23,18 @@ function monitor_ui.isInUse()
     return isInUse
 end
 
+--- Lock the monitor (set isInUse flag) to prevent shop_monitor updates
+-- This should be called at the start of a transaction flow
+function monitor_ui.lock()
+    isInUse = true
+end
+
+--- Unlock the monitor (clear isInUse flag) to allow shop_monitor updates
+-- Note: clearSession() also unlocks
+function monitor_ui.unlock()
+    isInUse = false
+end
+
 --- Initialize monitor UI
 -- @param tac table - TAC instance
 -- @param monitorSide string - side where monitor is attached (optional, will auto-detect)
