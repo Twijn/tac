@@ -92,6 +92,14 @@ function commands.showStatus(tac, d)
     if status.address then
         d.mess("Shop Address: " .. status.address)
     end
+    
+    -- Show sync node configuration
+    local syncNode = tac.settings.get("shopk_syncNode")
+    if syncNode then
+        d.mess("Sync Node: " .. syncNode)
+    else
+        d.mess("Sync Node: (default)")
+    end
 end
 
 --- Handle tiers subcommand
