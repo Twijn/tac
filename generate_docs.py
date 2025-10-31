@@ -582,6 +582,95 @@ class TACDocGenerator:
 """
         return html
     
+    def generate_api_endpoints(self):
+        """Generate JSON API endpoints for version checking and updates"""
+        import json
+        
+        # Create API directory
+        api_dir = self.output_dir / 'api'
+        api_dir.mkdir(exist_ok=True)
+        
+        # Extract core TAC version
+        tac_version = None
+        tac_module = None
+        for m in self.modules:
+            if m['name'] == 'tac.init':
+                tac_version = m.get('version', '0.0.0')
+                tac_module = m
+                break
+        
+        # Build versions manifest
+        versions = {
+            'tac': {
+                'version': tac_version or '0.0.0',
+                'core': {},
+                'extensions': {}
+            }
+        }
+        
+        # Categorize modules
+        for m in self.modules:
+            if m['path'].startswith('tac/core/'):
+                module_name = m['name'].replace('tac.core.', '')
+                versions['tac']['core'][module_name] = {
+                    'version': m.get('version', '0.0.0'),
+                    'path': m['path'],
+                    'download_url': f"https://raw.githubusercontent.com/Twijn/tac/main/{m['path']}"
+                }
+            elif m['path'].startswith('tac/extensions/'):
+                # Only include top-level extensions (not submodules)
+                if '/' not in m['path'][15:]:
+                    module_name = m['name'].replace('tac.extensions.', '')
+                    versions['tac']['extensions'][module_name] = {
+                        'version': m.get('version', '0.0.0'),
+                        'path': m['path'],
+                        'download_url': f"https://raw.githubusercontent.com/Twijn/tac/main/{m['path']}"
+                    }
+        
+        # Write versions.json
+        with open(api_dir / 'versions.json', 'w') as f:
+            json.dump(versions, f, indent=2)
+        
+        # Write latest.json (just the TAC version)
+        latest = {
+            'version': tac_version or '0.0.0',
+            'updated_at': os.popen('date -u +"%Y-%m-%dT%H:%M:%SZ"').read().strip()
+        }
+        with open(api_dir / 'latest.json', 'w') as f:
+            json.dump(latest, f, indent=2)
+        
+        # Write module manifests for each extension
+        for m in self.modules:
+            if m['path'].startswith('tac/extensions/') and '/' not in m['path'][15:]:
+                module_name = m['name'].replace('tac.extensions.', '')
+                
+                # Find all submodules for this extension
+                submodules = []
+                extension_dir = m['path'].replace('.lua', '')
+                for sub_m in self.modules:
+                    if sub_m['path'].startswith(extension_dir + '/'):
+                        submodules.append({
+                            'name': sub_m['name'].split('.')[-1],
+                            'path': sub_m['path'],
+                            'version': sub_m.get('version'),
+                            'download_url': f"https://raw.githubusercontent.com/Twijn/tac/main/{sub_m['path']}"
+                        })
+                
+                module_manifest = {
+                    'name': module_name,
+                    'version': m.get('version', '0.0.0'),
+                    'description': m.get('description', ''),
+                    'author': m.get('author'),
+                    'main_file': m['path'],
+                    'download_url': f"https://raw.githubusercontent.com/Twijn/tac/main/{m['path']}",
+                    'submodules': submodules if submodules else None
+                }
+                
+                with open(api_dir / f'{module_name}.json', 'w') as f:
+                    json.dump(module_manifest, f, indent=2)
+        
+        print(f"Generated API endpoints in {api_dir}")
+    
     def generate(self):
         """Generate documentation for all Lua files"""
         self.output_dir.mkdir(exist_ok=True, parents=True)
@@ -613,6 +702,9 @@ class TACDocGenerator:
         index_html = self.generate_html_index(self.modules)
         with open(self.output_dir / 'index.html', 'w', encoding='utf-8') as f:
             f.write(index_html)
+        
+        # Generate API endpoints
+        self.generate_api_endpoints()
         
         print(f"Generated documentation for {len(self.modules)} modules")
         print(f"Output directory: {self.output_dir}")

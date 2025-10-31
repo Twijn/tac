@@ -8,7 +8,7 @@
     
     @module tac
     @author Twijn
-    @version 1.2.1
+    @version 1.3.0
     @license MIT
     
     @example
@@ -48,7 +48,7 @@
 ]]
 
 local TAC = {
-    version = "1.2.1",
+    version = "1.3.0",
     name = "tAC"
 }
 
