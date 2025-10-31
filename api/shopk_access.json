@@ -1,6 +1,6 @@
 {
   "name": "shopk_access",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Sells access tags as SKUs via ShopK/Kromer payments. Integrates with ShopK to allow users to purchase access tags through the Kromer payment system. Modular version using separate modules for different functionality.",
   "author": "Twijn",
   "main_file": "tac/extensions/shopk_access.lua",
