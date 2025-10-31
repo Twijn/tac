@@ -7,7 +7,7 @@
     
     @module tac.extensions.shopk_access
     @author Twijn
-    @version 1.2.0
+    @version 1.3.0
     
     @example
     -- This extension is loaded automatically by TAC.
@@ -31,7 +31,7 @@
 
 local ShopKAccessExtension = {
     name = "shopk_access",
-    version = "1.2.0",
+    version = "1.3.0",
     description = "Sell access tags via ShopK/Kromer payments with monitor UI",
     author = "Twijn",
     dependencies = {},

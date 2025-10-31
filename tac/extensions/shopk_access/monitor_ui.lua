@@ -14,6 +14,13 @@ local monitor_ui = {}
 local activeMonitor = nil
 local activeSession = nil
 local touchListener = nil
+local isInUse = false  -- Flag to indicate if monitor is showing interactive UI
+
+--- Check if monitor is currently in use (showing interactive UI)
+-- @return boolean - true if monitor is showing interactive screens
+function monitor_ui.isInUse()
+    return isInUse
+end
 
 --- Initialize monitor UI
 -- @param tac table - TAC instance
@@ -46,7 +53,7 @@ function monitor_ui.init(tac, monitorSide)
     end
     
     -- Test monitor
-    activeMonitor.setTextScale(0.5)
+    activeMonitor.setTextScale(1)
     activeMonitor.setBackgroundColor(colors.black)
     activeMonitor.clear()
     
@@ -124,6 +131,7 @@ function monitor_ui.showRenewalChoice(data, callback)
         return false
     end
     
+    isInUse = true  -- Mark monitor as in use
     activeMonitor.setBackgroundColor(colors.black)
     activeMonitor.clear()
     
@@ -195,6 +203,7 @@ function monitor_ui.showPurchaseChoice(data, callback)
         return false
     end
     
+    isInUse = true  -- Mark monitor as in use
     activeMonitor.setBackgroundColor(colors.black)
     activeMonitor.clear()
     
@@ -335,6 +344,10 @@ function monitor_ui.showSuccess(message, details)
     -- Auto-clear after delay
     activeSession = nil
     os.startTimer(5) -- Will clear after 5 seconds via timer event
+    
+    -- Schedule reset of isInUse flag
+    os.queueEvent("monitor_ui_reset_timer")
+    os.startTimer(6) -- Reset flag after 6 seconds
 end
 
 --- Show error screen
@@ -390,6 +403,10 @@ function monitor_ui.showError(message)
     -- Auto-clear after delay
     activeSession = nil
     os.startTimer(5)
+    
+    -- Schedule reset of isInUse flag
+    os.queueEvent("monitor_ui_reset_timer")
+    os.startTimer(6) -- Reset flag after 6 seconds
 end
 
 --- Handle touch events
@@ -451,6 +468,7 @@ end
 --- Clear active session and return to default screen
 function monitor_ui.clearSession()
     activeSession = nil
+    isInUse = false  -- Reset the in-use flag
     showDefaultScreen()
 end
 

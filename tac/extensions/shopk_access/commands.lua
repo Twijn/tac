@@ -242,6 +242,8 @@ function commands.handleSubscriptionsCommand(args, tac, d)
     local subcmd = (args[2] or "list"):lower()
     
     if subcmd == "list" then
+        commands.listAllSubscriptions(tac, d)
+    elseif subcmd == "active" then
         commands.listActiveSubscriptions(tac, d)
     elseif subcmd == "expired" then
         commands.listExpiredSubscriptions(tac, d)
@@ -250,12 +252,148 @@ function commands.handleSubscriptionsCommand(args, tac, d)
     elseif subcmd == "cleanup" then
         commands.cleanupExpiredSubscriptions(args, tac, d)
     else
-        d.err("Usage: shop subscriptions <list|expired|cancel|cleanup>")
-        d.mess("  list    - Show active subscriptions")
-        d.mess("  expired - Show expired subscriptions")
+        d.err("Usage: shop subscriptions <list|active|expired|cancel|cleanup>")
+        d.mess("  list    - Show all subscriptions (active and expired)")
+        d.mess("  active  - Show only active subscriptions")
+        d.mess("  expired - Show only expired subscriptions")
         d.mess("  cancel  - Cancel a subscription (with refund options)")
         d.mess("  cleanup - Remove old expired subscriptions")
+        d.mess("")
+        d.mess("EXPIRATION INFO:")
+        d.mess("  When a subscription expires, the card remains in the system")
+        d.mess("  but access is automatically revoked. The cardholder can:")
+        d.mess("  - Renew via ShopK (if enabled)")
+        d.mess("  - Request renewal from an admin")
+        d.mess("  - Purchase a new subscription")
+        d.mess("")
+        d.mess("  To permanently remove expired cards, use 'shop subscriptions cleanup'")
     end
+end
+
+--- Show all subscriptions (active and expired)
+-- @param tac table - TAC instance
+-- @param d table - display interface
+function commands.listAllSubscriptions(tac, d)
+    local active = subscriptions.getActiveSubscriptions(tac)
+    local expired = subscriptions.getExpiredSubscriptions(tac)
+    
+    -- Combine both lists
+    local allSubs = {}
+    for _, sub in ipairs(active) do
+        table.insert(allSubs, {
+            cardData = sub.cardData,
+            tier = sub.tier,
+            daysRemaining = sub.daysRemaining,
+            daysExpired = nil,
+            isExpired = false
+        })
+    end
+    for _, sub in ipairs(expired) do
+        table.insert(allSubs, {
+            cardData = sub.cardData,
+            tier = nil,
+            daysRemaining = nil,
+            daysExpired = sub.daysExpired,
+            isExpired = true
+        })
+    end
+    
+    if #allSubs == 0 then
+        d.mess("No subscriptions found")
+        return
+    end
+    
+    -- Sort: active first (by days remaining), then expired (by days expired)
+    table.sort(allSubs, function(a, b)
+        if a.isExpired ~= b.isExpired then
+            return not a.isExpired -- Active first
+        end
+        if a.isExpired then
+            return a.daysExpired < b.daysExpired -- Most recently expired first
+        else
+            return a.daysRemaining < b.daysRemaining -- Soonest expiration first
+        end
+    end)
+    
+    local ACCESS_CONFIG = config.get()
+    
+    interactive_list.show({
+        title = string.format("All Subscriptions (Active: %d, Expired: %d)", #active, #expired),
+        items = allSubs,
+        formatItem = function(item)
+            local cardData = item.cardData
+            if item.isExpired then
+                return string.format("[EXPIRED] %s (%d days ago)", 
+                    cardData.name or "Unknown",
+                    item.daysExpired)
+            else
+                local tier = item.tier
+                local expiryBadge = item.daysRemaining <= 7 and " [!]" or ""
+                return string.format("%s - %s (%dd)%s", 
+                    cardData.name or "Unknown",
+                    tier and tier.name or "Unknown",
+                    item.daysRemaining,
+                    expiryBadge)
+            end
+        end,
+        formatDetails = function(item)
+            local cardData = item.cardData
+            local details = {}
+            
+            table.insert(details, "Name: " .. (cardData.name or "Unknown"))
+            
+            if item.isExpired then
+                table.insert(details, "Status: EXPIRED")
+                table.insert(details, "")
+                table.insert(details, "Expired: " .. utils.formatExpiration(cardData.expiration))
+                table.insert(details, string.format("Days Ago: %d", item.daysExpired))
+                table.insert(details, "")
+                table.insert(details, "WHAT HAPPENS WHEN EXPIRED:")
+                table.insert(details, "- Card remains in system but access is revoked")
+                table.insert(details, "- Cardholder can renew via ShopK or request renewal")
+                table.insert(details, "- Use 'shop subscriptions cleanup' to permanently remove")
+            else
+                local tier = item.tier
+                table.insert(details, "Status: ACTIVE")
+                table.insert(details, "Type: " .. (tier and tier.name or "Unknown"))
+                table.insert(details, "Category: " .. (tier and tier.category or "Unknown"))
+                table.insert(details, "")
+                table.insert(details, "Expires: " .. utils.formatExpiration(cardData.expiration))
+                table.insert(details, string.format("Days Remaining: %d", item.daysRemaining))
+                
+                if item.daysRemaining <= 7 then
+                    table.insert(details, "WARNING: Expiring soon!")
+                end
+                
+                table.insert(details, "")
+                
+                if cardData.metadata and cardData.metadata.purchaseValue then
+                    table.insert(details, string.format("Original Purchase: %d %s", 
+                        cardData.metadata.purchaseValue, 
+                        ACCESS_CONFIG.general_settings.currency_name))
+                end
+                
+                if tier then
+                    table.insert(details, string.format("Renewal Price: %d %s", 
+                        tier.renewal_price, 
+                        ACCESS_CONFIG.general_settings.currency_name))
+                end
+            end
+            
+            if cardData.username then
+                table.insert(details, "")
+                table.insert(details, "Username: " .. cardData.username)
+            end
+            
+            if cardData.id then
+                table.insert(details, "")
+                table.insert(details, "Card ID:")
+                table.insert(details, "  " .. cardData.id)
+            end
+            
+            return details
+        end
+    })
 end
 
 --- Show active subscriptions
@@ -570,7 +708,7 @@ function commands.getCompletions(args)
     elseif #args == 2 and args[1]:lower() == "tiers" then
         return {"list", "add", "remove", "edit"}
     elseif #args == 2 and args[1]:lower() == "subscriptions" then
-        return {"list", "expired", "cancel", "cleanup"}
+        return {"list", "active", "expired", "cancel", "cleanup"}
     elseif #args == 3 and args[1]:lower() == "tiers" and args[2]:lower() == "remove" then
         local ACCESS_CONFIG = config.get()
         local tierNames = {}

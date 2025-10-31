@@ -7,7 +7,7 @@
     
     @module tac.extensions.shop_monitor
     @author Twijn
-    @version 1.0.2
+    @version 1.0.3
     
     @example
     -- This extension is loaded automatically by TAC.
@@ -30,7 +30,7 @@
 
 local ShopMonitorExtension = {
     name = "shop_monitor",
-    version = "1.0.2",
+    version = "1.0.3",
     description = "Display available shop items on a monitor",
     author = "Twijn",
     dependencies = {},
@@ -429,34 +429,43 @@ function ShopMonitorExtension.init(tac)
         
         -- Update monitor periodically regardless of ShopK status
         while true do
-            -- Force monitor detection every time
-            local currentMonitor = nil
-            if MONITOR_CONFIG.monitor_side then
-                currentMonitor = peripheral.wrap(MONITOR_CONFIG.monitor_side)
-            end
+            -- Check if monitor UI is in use (showing interactive screens)
+            local monitor_ui = tac.extensions.shopk_access and tac.extensions.shopk_access.monitor_ui
+            local isMonitorBusy = monitor_ui and monitor_ui.isInUse and monitor_ui.isInUse()
             
-            if not currentMonitor then
-                -- Auto-detect monitor
-                for _, side in ipairs(peripheral.getNames()) do
-                    if peripheral.getType(side) == "monitor" then
-                        currentMonitor = peripheral.wrap(side)
-                        if currentMonitor then
-                            MONITOR_CONFIG.monitor_side = side
-                            monitor = currentMonitor
-                            print("Monitor: Auto-detected " .. side)
-                            break
+            if not isMonitorBusy then
+                -- Force monitor detection every time
+                local currentMonitor = nil
+                if MONITOR_CONFIG.monitor_side then
+                    currentMonitor = peripheral.wrap(MONITOR_CONFIG.monitor_side)
+                end
+                
+                if not currentMonitor then
+                    -- Auto-detect monitor
+                    for _, side in ipairs(peripheral.getNames()) do
+                        if peripheral.getType(side) == "monitor" then
+                            currentMonitor = peripheral.wrap(side)
+                            if currentMonitor then
+                                MONITOR_CONFIG.monitor_side = side
+                                monitor = currentMonitor
+                                print("Monitor: Auto-detected " .. side)
+                                break
+                            end
                         end
+                    end
+                else
+                    monitor = currentMonitor
+                end
+                
+                if monitor then
+                    local success, err = pcall(updateMonitorDisplay, tac)
+                    if not success then
+                        print("Monitor update error: " .. tostring(err))
                     end
                 end
             else
-                monitor = currentMonitor
-            end
-            
-            if monitor then
-                local success, err = pcall(updateMonitorDisplay, tac)
-                if not success then
-                    print("Monitor update error: " .. tostring(err))
-                end
+                -- Monitor is busy, skip this update
+                -- print("Monitor: Skipping update (interactive UI active)")
             end
             
             sleep(MONITOR_CONFIG.refresh_interval or 10)

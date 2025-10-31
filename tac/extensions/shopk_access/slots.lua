@@ -13,25 +13,18 @@ local utils = require("tac.extensions.shopk_access.utils")
 local slots = {}
 
 --- Find all tags that exist in the system matching a pattern
+-- Only tags that have a corresponding door are considered valid slots
 -- @param tac table - TAC instance
 -- @param pattern string - wildcard pattern (e.g., "tenant.*")
 -- @return table - set of matching tags
 function slots.getAllMatchingTags(tac, pattern)
     local matchingTags = {}
-    local pattern_regex = "^" .. pattern:gsub("%*", ".*") .. "$"
+    -- Convert wildcard pattern to Lua pattern
+    -- .* in pattern becomes .+ to require at least one character (not zero)
+    local pattern_regex = "^" .. pattern:gsub("%*", ".+") .. "$"
     
-    -- Check all existing cards for matching tags
-    for cardId, cardData in pairs(tac.cards.getAll()) do
-        if cardData.tags then
-            for _, tag in ipairs(cardData.tags) do
-                if tag:match(pattern_regex) then
-                    matchingTags[tag] = true  -- Use set to avoid duplicates
-                end
-            end
-        end
-    end
-    
-    -- Also check all doors for matching tags
+    -- Only consider tags that have a corresponding door
+    -- This ensures slots are physical locations, not just access groups
     for doorId, doorData in pairs(tac.doors.getAll()) do
         if doorData.tags then
             for _, tag in ipairs(doorData.tags) do
