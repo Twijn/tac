@@ -1,5 +1,5 @@
 -- TAC (Terminal Access Control) Installer
--- Version 1.1.0
+-- Version 1.1.3
 -- A comprehensive installer for the TAC system with module management
 
 
@@ -7,7 +7,7 @@
 local libs = {"cmd", "formui", "persist", "s", "shopk", "tables", "updater"}
 
 local TAC_INSTALLER = {
-    version = "1.1.2",
+    version = "1.1.3",
     name = "TAC Installer",
     
     -- GitHub configuration
@@ -246,15 +246,9 @@ function TAC_INSTALLER.removeModule(moduleName)
 end
 
 function TAC_INSTALLER.listModules()
-    print("Available TAC modules:")
-    print(string.rep("=", 50))
+    print("Available modules:")
     
     for name, module in pairs(TAC_INSTALLER.modules) do
-        term.setTextColor(colors.yellow)
-        print(name .. " - " .. module.name)
-        term.setTextColor(colors.white)
-        print("  " .. module.description)
-        
         -- Check if installed
         local installed = true
         for _, filename in ipairs(module.files) do
@@ -264,13 +258,20 @@ function TAC_INSTALLER.listModules()
             end
         end
         
+        -- Compact single-line format with status indicator
+        term.setTextColor(colors.yellow)
+        term.write(name)
+        term.setTextColor(colors.white)
+        term.write(" - ")
+        
         if installed then
             term.setTextColor(colors.lime)
-            print("  Status: INSTALLED")
+            term.write("[INSTALLED]")
         else
-            term.setTextColor(colors.red)
-            print("  Status: NOT INSTALLED")
+            term.setTextColor(colors.gray)
+            term.write("[NOT INSTALLED]")
         end
+        
         term.setTextColor(colors.white)
         print()
     end
@@ -344,14 +345,17 @@ local args = {...}
 if #args == 0 or args[1] == "install" then
     -- Interactive installation
     print("TAC Installer - Module Selection")
-    print("Select modules to install (press Enter to toggle, 'done' when finished):")
     print()
     
     TAC_INSTALLER.listModules()
     
     local selectedModules = {}
-    print("Enter module names to install (comma-separated), or 'all' for all modules:")
-    print("Press Enter for no additional modules.")
+    print()
+    print("Enter modules (comma-separated) or 'all':")
+    term.setTextColor(colors.gray)
+    print("(Press Enter for core only)")
+    term.setTextColor(colors.white)
+    term.write("> ")
     
     local input = read()
     if input and input ~= "" then
