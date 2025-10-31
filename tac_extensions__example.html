@@ -178,13 +178,31 @@ function MyExtension.init(tac)
 end</code></pre>
     <h2>Functions</h2>
     <div class='function'>
+        <h3><code>MyExtension.init()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/_example.lua#L13' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>To use this extension from another extension:</p>
+    </div>
+    <div class='function'>
+        <h3><code>ExampleExtension.init(tac)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/_example.lua#L39' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Initialize the extension  This function is called when the extension is loaded by TAC. Use this to: - Register commands with tac.registerCommand() - Add hooks with tac.addHook() - Register background processes with tac.registerBackgroundProcess() - Access TAC settings, cards, doors, etc.  - registerCommand(name, commandDef): Register a new command - registerExtension(name, extension): Register an extension - addHook(hookName, callback): Add a hook callback - registerBackgroundProcess(name, fn): Register a background process - settings: Persistent settings storage - cards: Persistent card storage - doors: Persistent door storage - logger: Logger instance</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): The TAC instance with methods:</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
         <h3><code>ExampleExtension.customFunction()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/_example.lua#L110' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/_example.lua#L106' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Custom function that can be called by other extensions  Demonstrates how extensions can provide APIs for inter-extension communication. </p>
         <div class='returns'><strong>Returns:</strong> string A greeting message</div>
     </div>
     <div class='function'>
         <h3><code>ExampleExtension.onCardCreated(cardData)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/_example.lua#L121' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/_example.lua#L116' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Hook for card creation events  This function will be called when cards are created (if hooked into TAC). Can be used to extend or validate card data. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -194,7 +212,8 @@ end</code></pre>
     </div>
     <div class='function'>
         <h3><code>ExampleExtension.useOptionalExtension(tac)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/_example.lua#L132' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/_example.lua#L127' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Example of safely requiring another extension  Demonstrates how to check if an extension is loaded and access its functionality. This is useful for optional dependencies or inter-extension communication. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -205,7 +224,8 @@ end</code></pre>
     </div>
     <div class='function'>
         <h3><code>ExampleExtension.processMessage(message)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/_example.lua#L155' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/_example.lua#L151' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Example API method that other extensions can call  Shows how to export methods that other extensions can use. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -216,7 +236,8 @@ end</code></pre>
     </div>
     <div class='function'>
         <h3><code>ExampleExtension.getStats()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/_example.lua#L166' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/_example.lua#L162' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get extension statistics  Example of exposing data through the extension API. </p>
         <div class='returns'><strong>Returns:</strong> table Statistics object</div>
     </div>
 </body>

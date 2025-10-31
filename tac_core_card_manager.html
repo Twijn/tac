@@ -187,28 +187,64 @@ function MyExtension.init(tac)
 end</code></pre>
     <h2>Functions</h2>
     <div class='function'>
-        <h3><code>cardManager.createCard()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/card_manager.lua#L94' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <h3><code>MyExtension.init()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/card_manager.lua#L14' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>In your extension:</p>
+    </div>
+    <div class='function'>
+        <h3><code>cardManager.createCard(options)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/card_manager.lua#L79' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Create a new card with standard validation and logging  Creates a card with the provided options, validates the data, saves it, and logs the creation event. Auto-generates a card ID if not provided.  - id (string, optional): Card ID (auto-generated if not provided) - name (string, required): Display name for the card - tags (table, required): Array of access tags - expiration (number, optional): UTC epoch timestamp when card expires - username (string, optional): Username associated with card (used in ID generation) - prefix (string, optional): Prefix for auto-generated ID - createdBy (string, optional): Who/what created the card (default: "system") - metadata (table, optional): Additional custom data - logMessage (string, optional): Custom log message</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>options</code> (table): Card creation options:</li>
+            </ul>
+        </div>
         <div class='returns'><strong>Returns:</strong> string|nil Error message if creation failed</div>
     </div>
     <div class='function'>
-        <h3><code>cardManager.createSubscriptionCard()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/card_manager.lua#L146' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <h3><code>cardManager.createSubscriptionCard(options)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/card_manager.lua#L133' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Create a subscription card (with expiration)  Specialized function for creating time-limited subscription cards. Commonly used by ShopK integration for selling temporary access.  - username (string, required): Username of the subscriber - duration (number, required): Subscription duration in days - slot (string, required): Access level/slot (becomes the card tag) - createdBy (string, optional): Creator identifier (default: "shopk") - purchaseValue (number, optional): Purchase price for metadata - transactionId (string, optional): Transaction ID for metadata - logMessage (string, optional): Custom log message</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>options</code> (table): Subscription card options:</li>
+            </ul>
+        </div>
         <div class='returns'><strong>Returns:</strong> string|nil Error message if creation failed</div>
     </div>
     <div class='function'>
-        <h3><code>cardManager.renewCard()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/card_manager.lua#L203' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <h3><code>cardManager.renewCard(cardId, additionalDuration, options)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/card_manager.lua#L192' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Renew an existing card  Extends the expiration date of an existing card by the specified duration. Updates renewal metadata and logs the renewal event.  - renewedBy (string, optional): Who renewed the card (default: "system") - transactionId (string, optional): Transaction ID for metadata - logMessage (string, optional): Custom log message</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>cardId</code> (string): ID of the card to renew</li>
+                <li><code>additionalDuration</code> (number): Days to add to current expiration</li>
+                <li><code>options</code> (table): Optional renewal options:</li>
+            </ul>
+        </div>
         <div class='returns'><strong>Returns:</strong> string|nil Error message if renewal failed</div>
     </div>
     <div class='function'>
-        <h3><code>cardManager.getCardInfo()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/card_manager.lua#L264' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <h3><code>cardManager.getCardInfo(cardId)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/card_manager.lua#L248' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get card status and info  Retrieves comprehensive information about a card including expiration status. Returns structured data with calculated fields like isExpired and timeUntilExpiration.  - id (string): Card ID - name (string): Card display name - tags (table): Access tags array - created (number): Creation timestamp - createdBy (string): Creator identifier - isExpired (boolean): Whether card is currently expired - timeUntilExpiration (number|nil): Milliseconds until expiration (nil if no expiration) - expiration (number|nil): Expiration timestamp if set - metadata (table): Custom metadata</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>cardId</code> (string): ID of the card to query</li>
+            </ul>
+        </div>
         <div class='returns'><strong>Returns:</strong> string|nil Error message if card not found</div>
     </div>
     <div class='function'>
         <h3><code>cardManager.isValidCardId(cardId)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/card_manager.lua#L297' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/card_manager.lua#L293' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Validate card ID format  Checks if a card ID meets basic format requirements (non-empty string). </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>

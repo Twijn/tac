@@ -160,6 +160,43 @@
         <div class='metadata'> Author: Twijn</div>
         <a href="https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/utils.lua" class="github-link" target="_blank">View on GitHub →</a>
     </div>
+    <h2>Functions</h2>
+    <div class='function'>
+        <h3><code>utils.isCardExpired(cardData)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/utils.lua#L13' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Check if a card is expired</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>cardData</code> (table): - card data with expiration field</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> boolean - true if expired</div>
+    </div>
+    <div class='function'>
+        <h3><code>utils.formatExpiration(timestamp)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/utils.lua#L23' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Format expiration time for display</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>timestamp</code> (number): - expiration timestamp</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string - formatted time</div>
+    </div>
+    <div class='function'>
+        <h3><code>utils.getDaysUntilExpiration(timestamp)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/utils.lua#L35' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get days until expiration</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>timestamp</code> (number): - expiration timestamp</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> number - days until expiration (negative if expired)</div>
+    </div>
 </body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-lua.min.js"></script>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>tac.extensions.updater - TAC Documentation</title>
+    <title>installer - TAC Documentation</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <style>
         :root {
@@ -155,22 +155,15 @@
 <body>
     <div class="back-link"><a href="index.html">← Back to index</a></div>
     <div class="header">
-        <h1>tac.extensions.updater <span class="version-badge">v1.3.0</span></h1>
-        <p>Provides auto-update functionality for TAC libraries and (eventually) the TAC system itself via lib/updater.lua. This extension checks for updates on startup and provides commands to check for and install updates.</p>
-        <div class='metadata'> Author: Twijn • License: MIT</div>
-        <a href="https://github.com/Twijn/tac/blob/main/tac/extensions/updater.lua" class="github-link" target="_blank">View on GitHub →</a>
+        <h1>installer <span class="version-badge">v1.1.3</span></h1>
+        <p></p>
+        <a href="https://github.com/Twijn/tac/blob/main/installer.lua" class="github-link" target="_blank">View on GitHub →</a>
     </div>
     <h2>Functions</h2>
     <div class='function'>
-        <h3><code>UpdaterExtension.init(tac)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/updater.lua#L168' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
-        <p>Initialize the updater extension  This function is called when the extension is loaded by TAC. It performs the following actions: 1. Checks for available updates on startup and notifies the user if any are found 2. Registers the 'updater' command with 'check' and 'update' subcommands  The extension will silently check for updates and only print a message if updates are available. If no updates are found, no message is displayed. </p>
-        <div class='params'>
-            <strong>Parameters:</strong>
-            <ul>
-                <li><code>tac</code> (table): The TAC instance that provides command registration and hooks</li>
-            </ul>
-        </div>
+        <h3><code>TAC_INSTALLER.install()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/installer.lua#L163' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Main installation functions</p>
     </div>
 </body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>

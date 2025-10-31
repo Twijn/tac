@@ -183,8 +183,14 @@ function MyExtension.init(tac)
 end</code></pre>
     <h2>Functions</h2>
     <div class='function'>
+        <h3><code>MyExtension.init()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L12' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>In your extension:</p>
+    </div>
+    <div class='function'>
         <h3><code>HardwareManager.findPeripheralsOfType(filter)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L41' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L36' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Find peripherals of a specific type  Searches all connected peripherals and returns a list of names matching the specified type. Useful for finding NFC readers, modems, monitors, etc. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -194,8 +200,20 @@ end</code></pre>
         <div class='returns'><strong>Returns:</strong> table Array of peripheral names matching the filter</div>
     </div>
     <div class='function'>
+        <h3><code>HardwareManager.updateDoorSign(door)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L57' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Update a door sign with door information  Updates a sign peripheral to display the door name and tags. The sign will show the door name on line 2 with decorative borders.  - sign (string): Peripheral name of the sign - name (string): Door name to display - tags (table): Array of tag strings</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>door</code> (table): Door configuration with fields:</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
         <h3><code>HardwareManager.updateAllSigns(doors)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L77' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L73' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Update all door signs  Iterates through all doors and updates their signs with current information. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -205,7 +223,8 @@ end</code></pre>
     </div>
     <div class='function'>
         <h3><code>HardwareManager.showEnterAnimation(door, name, delay)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L90' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L85' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Show enter animation on monitors  Displays a welcome animation on a door's sign, gradually revealing the user's name. After the animation completes, restores the sign to its normal state. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -217,7 +236,8 @@ end</code></pre>
     </div>
     <div class='function'>
         <h3><code>HardwareManager.showAccessDenied(door, reason)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L110' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L105' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Show access denied message on door sign  Displays a flashing "ACCESS DENIED" message on a door's sign with a custom reason. The message flashes 3 times before restoring the sign to its normal state. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -227,18 +247,21 @@ end</code></pre>
         </div>
     </div>
     <div class='function'>
-        <h3><code>HardwareManager.controlDoor(state)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L135' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <h3><code>HardwareManager.controlDoor(door, state)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L128' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Control door relay (open/close)  Sets the redstone output state for all sides of a door's relay peripheral. Used to physically open or close doors connected via redstone.  - relay (string): Peripheral name of the redstone relay</p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
+                <li><code>door</code> (table): Door configuration with fields:</li>
                 <li><code>state</code> (boolean): true to activate relay (open door), false to deactivate (close door)</li>
             </ul>
         </div>
     </div>
     <div class='function'>
         <h3><code>HardwareManager.openDoor(door, name, openTime)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L150' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/hardware.lua#L145' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Open door for specified time  Opens a door, optionally displays a welcome animation, then automatically closes it. The door will remain open for the specified duration or the door's default open time. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>

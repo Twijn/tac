@@ -160,6 +160,133 @@
         <div class='metadata'> Author: Twijn</div>
         <a href="https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/shop.lua" class="github-link" target="_blank">View on GitHub →</a>
     </div>
+    <h2>Functions</h2>
+    <div class='function'>
+        <h3><code>shop_handler.startShop(tac, d)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/shop.lua#L22' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Start the ShopK shop</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+                <li><code>d</code> (table): - display interface</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>shop_handler.handleTransaction(tac, transaction)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/shop.lua#L139' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Handle incoming transactions</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+                <li><code>transaction</code> (table): - transaction data</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>shop_handler.handleRenewal(tac, transaction, username)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/shop.lua#L177' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Handle renewal transactions</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+                <li><code>transaction</code> (table): - transaction data</li>
+                <li><code>username</code> (string): - player username</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>shop_handler.handleNewSubscription(tac, transaction, sku, username)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/shop.lua#L359' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Handle new subscription transactions</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+                <li><code>transaction</code> (table): - transaction data</li>
+                <li><code>sku</code> (string): - SKU pattern</li>
+                <li><code>username</code> (string): - player username</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>shop_handler.stopShop(d)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/shop.lua#L482' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Stop the shop</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>d</code> (table): - display interface</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>shop_handler.isRunning()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/shop.lua#L512' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Check if shop is running</p>
+        <div class='returns'><strong>Returns:</strong> boolean - true if shop is running</div>
+    </div>
+    <div class='function'>
+        <h3><code>shop_handler.getStatus(tac)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/shop.lua#L518' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get shop status</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> table - status information</div>
+    </div>
+    <div class='function'>
+        <h3><code>shop_handler.writeNFCCard(tac, options)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/shop.lua#L530' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Write NFC card with subscription data</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+                <li><code>options</code> (table): - card creation options</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> boolean - success status</div>
+    </div>
+    <div class='function'>
+        <h3><code>shop_handler.writeRenewalNFCCard(tac, options)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/shop.lua#L700' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Write NFC card for renewal with extended expiration</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+                <li><code>options</code> (table): - renewal options</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> boolean - success status</div>
+    </div>
+    <div class='function'>
+        <h3><code>shop_handler.sendRefund(toAddress, amount, reason, callback)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/shop.lua#L857' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Send a refund to a Krist address</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>toAddress</code> (string): - address to send refund to</li>
+                <li><code>amount</code> (number): - amount to refund in KRO</li>
+                <li><code>reason</code> (string): - reason for refund (used in transaction metadata)</li>
+                <li><code>callback</code> (function): - callback function to handle result</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>shop_handler.canSendRefunds()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/shop.lua#L884' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Check if shop is running and can send refunds</p>
+        <div class='returns'><strong>Returns:</strong> boolean - true if shop can send refunds</div>
+    </div>
 </body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-lua.min.js"></script>

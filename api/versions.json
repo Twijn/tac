@@ -33,6 +33,18 @@
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/core/security.lua"
       }
     },
+    "lib": {
+      "interactive_list": {
+        "version": "1.0.2",
+        "path": "tac/lib/interactive_list.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/lib/interactive_list.lua"
+      },
+      "shopk_shared": {
+        "version": null,
+        "path": "tac/lib/shopk_shared.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/lib/shopk_shared.lua"
+      }
+    },
     "commands": {
       "modules": {
         "version": "0.0.0",
@@ -67,12 +79,12 @@
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/_example.lua"
       },
       "shop_monitor": {
-        "version": "1.0.2",
+        "version": "1.0.3",
         "path": "tac/extensions/shop_monitor.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shop_monitor.lua"
       },
       "shopk_access": {
-        "version": "1.2.0",
+        "version": "1.3.0",
         "path": "tac/extensions/shopk_access.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_access.lua"
       },
@@ -82,7 +94,7 @@
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_node.lua"
       },
       "updater": {
-        "version": "1.2.0",
+        "version": "1.3.0",
         "path": "tac/extensions/updater.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/updater.lua"
       }

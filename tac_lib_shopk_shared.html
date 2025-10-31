@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>tac.extensions.updater - TAC Documentation</title>
+    <title>tac.lib.shopk_shared - TAC Documentation</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <style>
         :root {
@@ -155,22 +155,77 @@
 <body>
     <div class="back-link"><a href="index.html">← Back to index</a></div>
     <div class="header">
-        <h1>tac.extensions.updater <span class="version-badge">v1.3.0</span></h1>
-        <p>Provides auto-update functionality for TAC libraries and (eventually) the TAC system itself via lib/updater.lua. This extension checks for updates on startup and provides commands to check for and install updates.</p>
-        <div class='metadata'> Author: Twijn • License: MIT</div>
-        <a href="https://github.com/Twijn/tac/blob/main/tac/extensions/updater.lua" class="github-link" target="_blank">View on GitHub →</a>
+        <h1>tac.lib.shopk_shared</h1>
+        <p>Get the current ShopK configuration</p>
+        <a href="https://github.com/Twijn/tac/blob/main/tac/lib/shopk_shared.lua" class="github-link" target="_blank">View on GitHub →</a>
     </div>
     <h2>Functions</h2>
     <div class='function'>
-        <h3><code>UpdaterExtension.init(tac)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/updater.lua#L168' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
-        <p>Initialize the updater extension  This function is called when the extension is loaded by TAC. It performs the following actions: 1. Checks for available updates on startup and notifies the user if any are found 2. Registers the 'updater' command with 'check' and 'update' subcommands  The extension will silently check for updates and only print a message if updates are available. If no updates are found, no message is displayed. </p>
+        <h3><code>shopk_shared.getConfig(tac)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/shopk_shared.lua#L11' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get the current ShopK configuration</p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
-                <li><code>tac</code> (table): The TAC instance that provides command registration and hooks</li>
+                <li><code>tac</code> (table): - TAC instance (optional, for settings fallback)</li>
             </ul>
         </div>
+        <div class='returns'><strong>Returns:</strong> table - configuration data</div>
+    </div>
+    <div class='function'>
+        <h3><code>shopk_shared.getShopData(tac)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/shopk_shared.lua#L45' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get shop status and data</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> table - shop status {running, address, tiers}</div>
+    </div>
+    <div class='function'>
+        <h3><code>shopk_shared.isConfigured(tac)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/shopk_shared.lua#L81' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Check if shop is properly configured</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> boolean - true if shop has required configuration</div>
+    </div>
+    <div class='function'>
+        <h3><code>shopk_shared.getAvailableSlots(tac, pattern)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/shopk_shared.lua#L90' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get available slots for a tier pattern</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+                <li><code>pattern</code> (string): - tier pattern (e.g., "tenant.*")</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> number - available slots count</div>
+    </div>
+    <div class='function'>
+        <h3><code>shopk_shared.formatPaymentMeta(pattern, tier)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/shopk_shared.lua#L137' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Format payment metadata for a tier</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>pattern</code> (string): - tier pattern</li>
+                <li><code>tier</code> (table): - tier data</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string - formatted metadata</div>
+    </div>
+    <div class='function'>
+        <h3><code>shopk_shared.clearCache()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/shopk_shared.lua#L150' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Clear cached data (useful for testing or config changes)</p>
     </div>
 </body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>

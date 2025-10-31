@@ -182,8 +182,14 @@ function MyExtension.init(tac)
 end</code></pre>
     <h2>Functions</h2>
     <div class='function'>
+        <h3><code>MyExtension.init()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L14' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>In your extension:</p>
+    </div>
+    <div class='function'>
         <h3><code>SecurityCore.randomString(length)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L45' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L40' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Generate a random string of given length  Creates a cryptographically random string using alphanumeric characters. Useful for generating unique card IDs, tokens, or session identifiers. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -194,7 +200,8 @@ end</code></pre>
     </div>
     <div class='function'>
         <h3><code>SecurityCore.truncateCardId(cardId)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L65' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L61' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Truncate card ID for display  Shortens a card ID to first 9 characters followed by "..." for readable logging. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -205,7 +212,8 @@ end</code></pre>
     </div>
     <div class='function'>
         <h3><code>SecurityCore.parseTags(str)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L78' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L73' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Parse tags from string  Converts a comma or space-separated string of tags into an array. Useful for parsing user input from forms or configuration files. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -216,7 +224,8 @@ end</code></pre>
     </div>
     <div class='function'>
         <h3><code>SecurityCore.expandTagHierarchy(tag)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L101' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L95' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Expand a tag into its hierarchy  Splits a hierarchical tag into all its parent levels. For example, "tenant.1.a" expands to {"tenant", "tenant.1", "tenant.1.a"}. This allows a specific tag to satisfy requirements for any parent level. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -227,7 +236,8 @@ end</code></pre>
     </div>
     <div class='function'>
         <h3><code>SecurityCore.expandCardTags(tags)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L128' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L122' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Expand a list of tags to include all parent tags  Processes an array of tags, expanding each hierarchical tag into its parent levels. Wildcard tags (ending with ".*") are preserved as-is without expansion. Removes duplicates in the resulting array. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -238,7 +248,8 @@ end</code></pre>
     </div>
     <div class='function'>
         <h3><code>SecurityCore.tagMatches(cardTag, doorTag)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L163' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L157' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Check if a card tag satisfies a door requirement  Determines if a single card tag grants access for a door requirement. Supports exact matches, hierarchical matching (card "tenant.1.a" satisfies door "tenant"), and wildcard card tags (card "tenant.*" satisfies any door tag starting with "tenant"). </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -250,7 +261,8 @@ end</code></pre>
     </div>
     <div class='function'>
         <h3><code>SecurityCore.checkAccess(cardTags, doorTags)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L199' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/security.lua#L192' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Check access permissions for a card against a door  Main access control function that determines if a card's tags grant access to a door. Automatically expands card tags to include parent hierarchies, then checks if any card tag satisfies any door requirement. Special case: door tag "*" grants access to any card with at least one tag. </p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>

@@ -160,6 +160,84 @@
         <div class='metadata'> Author: Twijn</div>
         <a href="https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/subscriptions.lua" class="github-link" target="_blank">View on GitHub →</a>
     </div>
+    <h2>Functions</h2>
+    <div class='function'>
+        <h3><code>subscriptions.getActiveSubscriptions(tac)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/subscriptions.lua#L16' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get all active subscriptions</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> table - array of active subscription data</div>
+    </div>
+    <div class='function'>
+        <h3><code>subscriptions.getExpiredSubscriptions(tac)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/subscriptions.lua#L57' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get expired subscriptions that could be cleaned up</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> table - array of expired subscription data</div>
+    </div>
+    <div class='function'>
+        <h3><code>subscriptions.calculateRefund(subscription, cancelTime)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/subscriptions.lua#L84' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Calculate refund amount for a subscription</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>subscription</code> (table): - subscription data</li>
+                <li><code>cancelTime</code> (number): - cancellation time (UTC epoch)</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> number, string - refund amount, refund reason</div>
+    </div>
+    <div class='function'>
+        <h3><code>subscriptions.cancelSubscription(tac, cardId, reason, processRefund)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/subscriptions.lua#L168' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Cancel a subscription and process refund</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+                <li><code>cardId</code> (string): - card ID to cancel</li>
+                <li><code>reason</code> (string): - cancellation reason</li>
+                <li><code>processRefund</code> (boolean): - whether to process the refund</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> boolean, string, number - success, message, refund amount</div>
+    </div>
+    <div class='function'>
+        <h3><code>subscriptions.displaySubscription(subscription, index)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/subscriptions.lua#L236' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Display subscription details</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>subscription</code> (table): - subscription data</li>
+                <li><code>index</code> (number): - display index</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>subscriptions.cleanupExpired(tac, maxAge)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/subscriptions.lua#L275' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Bulk cleanup expired subscriptions</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+                <li><code>maxAge</code> (number): - maximum age in days (optional, default 30)</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> number - number of subscriptions cleaned up</div>
+    </div>
 </body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-lua.min.js"></script>

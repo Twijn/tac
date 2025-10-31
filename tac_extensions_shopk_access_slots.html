@@ -160,6 +160,59 @@
         <div class='metadata'> Author: Twijn</div>
         <a href="https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/slots.lua" class="github-link" target="_blank">View on GitHub →</a>
     </div>
+    <h2>Functions</h2>
+    <div class='function'>
+        <h3><code>slots.getAllMatchingTags(tac, pattern)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/slots.lua#L15' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Find all tags that exist in the system matching a pattern Only tags that have a corresponding door are considered valid slots</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+                <li><code>pattern</code> (string): - wildcard pattern (e.g., "tenant.*")</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> table - set of matching tags</div>
+    </div>
+    <div class='function'>
+        <h3><code>slots.getAvailableSlots(tac, pattern)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/slots.lua#L41' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get available slots for a tier pattern</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+                <li><code>pattern</code> (string): - wildcard pattern</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> table, table - available slots array, occupied slots map</div>
+    </div>
+    <div class='function'>
+        <h3><code>slots.getActiveSubscriptions(tac, pattern)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/slots.lua#L75' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get active subscriptions for a pattern (for backward compatibility)</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+                <li><code>pattern</code> (string): - wildcard pattern</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> table - array of active subscription info</div>
+    </div>
+    <div class='function'>
+        <h3><code>slots.getNextAvailableSlot(tac, pattern)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/slots.lua#L88' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get next available slot for a tier pattern</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>tac</code> (table): - TAC instance</li>
+                <li><code>pattern</code> (string): - wildcard pattern</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string|nil - next available tag or nil if none available</div>
+    </div>
 </body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-lua.min.js"></script>
