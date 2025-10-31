@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tac.init - TAC Documentation</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #1a1a1a;
+            --link: #0066cc;
+            --border: #e0e0e0;
+            --code-bg: #f5f5f5;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1a1a1a;
+                --text: #e0e0e0;
+                --link: #4d9fff;
+                --border: #333333;
+                --code-bg: #2a2a2a;
+            }
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+        }
+        .header p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            opacity: 0.9;
+        }
+        .metadata {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 0.5rem;
+        }
+        h2 {
+            margin-top: 3rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 1.8rem;
+        }
+        h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 1.3rem;
+        }
+        code {
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        .function:not(.token) {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+        .function h3 {
+            margin-top: 0;
+        }
+        .function > p {
+            margin: 1rem 0;
+            line-height: 1.7;
+        }
+        .params, .returns {
+            margin-top: 1rem;
+        }
+        .params ul, .returns ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .params li, .returns li {
+            padding: 0.5rem 0;
+            padding-left: 1rem;
+            border-left: 3px solid var(--border);
+            margin: 0.25rem 0;
+        }
+        a {
+            color: var(--link);
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .back-link {
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+        .version-badge {
+            display: inline-block;
+            background: #2a3540;
+            color: #8b949e;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.75em;
+            font-weight: 500;
+            margin-left: 1rem;
+            vertical-align: middle;
+        }
+        .github-link {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--link);
+            color: white;
+            border: 1px solid var(--link);
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+        .github-link:hover {
+            opacity: 0.85;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-link"><a href="index.html">← Back to index</a></div>
+    <div class="header">
+        <h1>tac.init <span class="version-badge">v1.2.1</span></h1>
+        <p>The main package interface for the TAC access control system. This module provides the core functionality for managing card-based access control, including extension management, command registration, hooks, and background process management.</p>
+        <div class='metadata'> Author: Twijn • License: MIT</div>
+        <a href="https://github.com/Twijn/tac/blob/main/tac/init.lua" class="github-link" target="_blank">View on GitHub →</a>
+    </div>
+    <h2>Examples</h2>
+    <pre><code class='language-lua'>-- Basic TAC usage:
+local TAC = require("tac")
+
+-- Initialize TAC
+local tac = TAC.new({
+    autoload_extensions = true,
+    extension_dir = "tac/extensions"
+})
+
+-- Start the system
+tac.run()</code></pre>
+    <pre><code class='language-lua'>-- Create a custom extension:
+local MyExtension = {
+    name = "my_extension",
+    version = "1.0.0",
+    description = "My custom extension"
+}
+
+function MyExtension.init(tac)
+    -- Access TAC functionality
+    local cards = tac.cards.getAll()
+    tac.logger.logAccess({...})
+    
+    -- Load other extensions
+    local shopk = tac.require("shopk_access")
+    
+    -- Register commands
+    tac.registerCommand("mycommand", {...})
+end
+
+return MyExtension</code></pre>
+    <h2>Functions</h2>
+    <div class='function'>
+        <h3><code>instance.disableBackgroundProcess(name)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L201' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>name</code> (string): Unique identifier of the background process</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> boolean True if process was disabled, false if process not found</div>
+    </div>
+    <div class='function'>
+        <h3><code>instance.enableBackgroundProcess(name)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L219' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>name</code> (string): Unique identifier of the background process</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> boolean True if process was enabled, false if process not found</div>
+    </div>
+    <div class='function'>
+        <h3><code>instance.executeHooks(hookName)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L257' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>hookName</code> (string): Name of the hook to execute</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> boolean False if any hook returned false (action denied), true otherwise</div>
+    </div>
+    <div class='function'>
+        <h3><code>instance.checkExtensionSettings(d)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L303' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>d</code> (table): Optional display interface (uses instance.d if not provided)</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>instance.getServerNfc()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L373' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <div class='returns'><strong>Returns:</strong> table|nil Server NFC reader peripheral, or nil if not configured</div>
+    </div>
+    <div class='function'>
+        <h3><code>instance.require(extensionName)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L388' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>extensionName</code> (string): Name of the extension to require</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string|nil Error message if extension not available</div>
+    </div>
+    <div class='function'>
+        <h3><code>instance.accessLoop()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L400' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Main access control loop</p>
+    </div>
+    <div class='function'>
+        <h3><code>instance.commandLoop()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L501' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Command line interface loop</p>
+    </div>
+    <div class='function'>
+        <h3><code>instance.start()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L573' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Start the TAC system</p>
+    </div>
+    <div class='function'>
+        <h3><code>instance.shutdown()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L676' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Shutdown the TAC system gracefully</p>
+    </div>
+    <div class='function'>
+        <h3><code>TAC.loadExtensions(instance, options)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L699' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>instance</code> (table): The TAC instance</li>
+                <li><code>options</code> (table): Optional configuration (passed to extensionLoader.loadFromDirectory)</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> table Results with loaded, failed, and skipped extensions</div>
+    </div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-lua.min.js"></script>
+</html>
