@@ -12,6 +12,7 @@ local utils = require("tac.extensions.shopk_access.utils")
 local config = require("tac.extensions.shopk_access.config")
 local slots = require("tac.extensions.shopk_access.slots")
 local monitor_ui = require("tac.extensions.shopk_access.monitor_ui")
+local persist = require("persist")
 
 local shop_handler = {}
 
@@ -19,12 +20,74 @@ local shop_handler = {}
 local shop = nil
 local shopCoroutine = nil
 
+-- Persistent NFC write state
+local nfcWriteState = persist("nfc_write_state.json")
+
+--- Helper to issue refund with error metadata
+-- @param transaction table - original transaction
+-- @param errorMessage string - error description
+local function refundWithError(transaction, errorMessage)
+    term.setTextColor(colors.yellow)
+    print("Issuing refund: " .. errorMessage)
+    term.setTextColor(colors.white)
+    
+    shop_handler.sendRefund(transaction.from, transaction.value, errorMessage, function(success, message)
+        if success then
+            term.setTextColor(colors.green)
+            print("Refund issued successfully")
+            term.setTextColor(colors.white)
+        else
+            term.setTextColor(colors.red)
+            print("Failed to issue refund: " .. (message or "Unknown error"))
+            print("MANUAL REFUND REQUIRED for transaction " .. transaction.id)
+            term.setTextColor(colors.white)
+        end
+    end)
+end
+
+--- Resume any pending NFC writes from before restart
+-- @param tac table - TAC instance
+function shop_handler.resumePendingWrites(tac)
+    local pendingWrite = nfcWriteState.get("active")
+    if not pendingWrite then return end
+    
+    term.setTextColor(colors.cyan)
+    print("=== Resuming Pending NFC Write ===")
+    term.setTextColor(colors.white)
+    
+    if pendingWrite.type == "new_subscription" then
+        print("Type: New Subscription")
+        print("Player: " .. pendingWrite.username)
+        print("Slot: " .. pendingWrite.slot)
+        shop_handler.writeNFCCard(tac, {
+            username = pendingWrite.username,
+            slot = pendingWrite.slot,
+            tier = pendingWrite.tier,
+            transaction = pendingWrite.transaction
+        })
+    elseif pendingWrite.type == "renewal" then
+        print("Type: Renewal")
+        print("Player: " .. pendingWrite.username)
+        print("Access: " .. pendingWrite.accessTag)
+        shop_handler.writeRenewalNFCCard(tac, {
+            username = pendingWrite.username,
+            accessTag = pendingWrite.accessTag,
+            tier = pendingWrite.tier,
+            transaction = pendingWrite.transaction,
+            originalCard = pendingWrite.originalCard
+        })
+    end
+end
+
 --- Start the ShopK shop
 -- @param tac table - TAC instance
 -- @param d table - display interface
 function shop_handler.startShop(tac)
     local ACCESS_CONFIG = config.get()
     local shopk = require("lib.shopk")
+    
+    -- Check for pending NFC writes and resume them
+    shop_handler.resumePendingWrites(tac)
     
     -- Build shop configuration
     local shopConfig = {
@@ -154,6 +217,7 @@ function shop_handler.handleTransaction(tac, transaction)
         term.setTextColor(colors.red)
         print("Invalid transaction metadata - missing sku")
         term.setTextColor(colors.white)
+        refundWithError(transaction, "Invalid transaction: missing SKU")
         return
     end
     
@@ -161,6 +225,7 @@ function shop_handler.handleTransaction(tac, transaction)
         term.setTextColor(colors.red)
         print("Invalid transaction metadata - missing username")
         term.setTextColor(colors.white)
+        refundWithError(transaction, "Invalid transaction: missing username")
         return
     end
     
@@ -192,6 +257,7 @@ function shop_handler.handleRenewal(tac, transaction, username)
         term.setTextColor(colors.red)
         print("No cards found for user: " .. username)
         term.setTextColor(colors.white)
+        refundWithError(transaction, "Renewal failed: no existing cards found for " .. username)
         return
     end
     
@@ -204,6 +270,7 @@ function shop_handler.handleRenewal(tac, transaction, username)
         term.setTextColor(colors.red)
         print("Card has no tags to renew")
         term.setTextColor(colors.white)
+        refundWithError(transaction, "Renewal failed: card has no access tags")
         return
     end
     
@@ -212,6 +279,7 @@ function shop_handler.handleRenewal(tac, transaction, username)
         term.setTextColor(colors.red)
         print("No tier found for tag: " .. accessTag)
         term.setTextColor(colors.white)
+        refundWithError(transaction, "Renewal failed: no tier found for access level " .. accessTag)
         return
     end
     
@@ -220,6 +288,7 @@ function shop_handler.handleRenewal(tac, transaction, username)
         term.setTextColor(colors.red)
         print("Incorrect renewal price. Expected: " .. tier.renewal_price .. " KRO")
         term.setTextColor(colors.white)
+        refundWithError(transaction, string.format("Incorrect price: expected %d KRO, received %d KRO", tier.renewal_price, transaction.value))
         return
     end
     
@@ -290,7 +359,6 @@ function shop_handler.handleRenewal(tac, transaction, username)
         if monitor_ui.isAvailable() then
             monitor_ui.showError("Renewal cancelled by user")
             os.sleep(2)
-            monitor_ui.clearSession()
         end
         return
     end
@@ -310,7 +378,6 @@ function shop_handler.handleRenewal(tac, transaction, username)
             if monitor_ui.isAvailable() then
                 monitor_ui.showError("Failed to renew card: " .. (error or "Unknown error"))
                 os.sleep(3)
-                monitor_ui.clearSession()
             end
             return
         end
@@ -328,8 +395,7 @@ function shop_handler.handleRenewal(tac, transaction, username)
                 ["Access"] = accessTag,
                 ["Expires"] = utils.formatExpiration(renewedCard.expiration)
             })
-            os.sleep(5)
-            monitor_ui.clearSession()
+            -- Timer will auto-clear after 5 seconds
         end
         
     elseif choice == "nfc" then
@@ -349,7 +415,6 @@ function shop_handler.handleRenewal(tac, transaction, username)
             if monitor_ui.isAvailable() then
                 monitor_ui.showError("Failed to write new NFC card for renewal!")
                 os.sleep(3)
-                monitor_ui.clearSession()
             end
             return
         end
@@ -382,6 +447,7 @@ function shop_handler.handleNewSubscription(tac, transaction, sku, username)
         term.setTextColor(colors.red)
         print("No tier found for SKU: " .. sku)
         term.setTextColor(colors.white)
+        refundWithError(transaction, "Invalid SKU: " .. sku .. " does not match any available tier")
         return
     end
     
@@ -390,6 +456,7 @@ function shop_handler.handleNewSubscription(tac, transaction, sku, username)
         term.setTextColor(colors.red)
         print("Incorrect price for " .. sku .. ". Expected: " .. tier.price .. " KRO")
         term.setTextColor(colors.white)
+        refundWithError(transaction, string.format("Incorrect price for %s: expected %d KRO, received %d KRO", sku, tier.price, transaction.value))
         return
     end
     
@@ -399,6 +466,7 @@ function shop_handler.handleNewSubscription(tac, transaction, sku, username)
         term.setTextColor(colors.red)
         print("No available slots for " .. tierPattern)
         term.setTextColor(colors.white)
+        refundWithError(transaction, "No available slots for " .. tierPattern .. " tier - all slots occupied")
         return
     end
     
@@ -444,7 +512,6 @@ function shop_handler.handleNewSubscription(tac, transaction, sku, username)
             term.setTextColor(colors.white)
             monitor_ui.showError("Purchase cancelled by user")
             os.sleep(2)
-            monitor_ui.clearSession()
             return
         end
     end
@@ -459,7 +526,6 @@ function shop_handler.handleNewSubscription(tac, transaction, sku, username)
         if monitor_ui.isAvailable() then
             monitor_ui.showError("Failed to create NFC card. Transaction completed but card creation failed!")
             os.sleep(3)
-            monitor_ui.clearSession()
         end
         return
     end
@@ -475,7 +541,6 @@ function shop_handler.handleNewSubscription(tac, transaction, sku, username)
             ["Duration"] = tier.duration .. " days"
         })
         os.sleep(5)
-        monitor_ui.clearSession()
     end
 end
 
@@ -540,6 +605,17 @@ function shop_handler.writeNFCCard(tac, options)
     -- Generate card ID using TAC security core
     local SecurityCore = require("tac.core.security")
     local cardId = SecurityCore.randomString(128)
+    
+    -- Persist write state before starting
+    nfcWriteState.set("active", {
+        type = "new_subscription",
+        cardId = cardId,
+        username = username,
+        slot = slot,
+        tier = tier,
+        transaction = transaction,
+        startTime = os.epoch("utc")
+    })
     
     term.setTextColor(colors.yellow)
     print("Generated card ID: " .. SecurityCore.truncateCardId(cardId))
@@ -613,11 +689,12 @@ function shop_handler.writeNFCCard(tac, options)
             print("Card writing cancelled by user.")
             term.setTextColor(colors.white)
             serverNfc.cancelWrite()
+            nfcWriteState.unset("active")  -- Clear persisted state
             if monitor_ui.isAvailable() then
                 monitor_ui.showError("Card writing cancelled by user")
                 os.sleep(2)
-                monitor_ui.clearSession()
             end
+            refundWithError(transaction, "Card writing cancelled by user")
             return false
             
         -- Check for timeout
@@ -627,11 +704,13 @@ function shop_handler.writeNFCCard(tac, options)
             print("Please try again or check the NFC reader.")
             term.setTextColor(colors.white)
             serverNfc.cancelWrite()
+            nfcWriteState.unset("active")  -- Clear persisted state
             if monitor_ui.isAvailable() then
                 monitor_ui.showError("Card writing timed out (30 seconds). Please try again.")
                 os.sleep(3)
-                monitor_ui.clearSession()
             end
+            -- Issue refund for timeout
+            refundWithError(transaction, "NFC card write timeout - no card placed within 30 seconds")
             return false
             
         -- Check for NFC write error
@@ -639,17 +718,21 @@ function shop_handler.writeNFCCard(tac, options)
             term.setTextColor(colors.red)
             print("NFC write error: " .. tostring(param2))
             term.setTextColor(colors.white)
+            nfcWriteState.unset("active")  -- Clear persisted state
             if monitor_ui.isAvailable() then
                 monitor_ui.showError("NFC write error: " .. tostring(param2))
                 os.sleep(3)
-                monitor_ui.clearSession()
             end
+            refundWithError(transaction, "NFC write error: " .. tostring(param2))
             return false
         end
     end
     
     -- If NFC write was successful, save the card data
     if writeSuccessful then
+        -- Clear persisted write state
+        nfcWriteState.unset("active")
+        
         -- Save card using centralized card manager
         local savedCard, error = tac.cardManager.createCard({
             id = cardId,
@@ -671,8 +754,8 @@ function shop_handler.writeNFCCard(tac, options)
             if monitor_ui.isAvailable() then
                 monitor_ui.showError("Card written to NFC but failed to save to database: " .. (error or "Unknown error"))
                 os.sleep(3)
-                monitor_ui.clearSession()
             end
+            -- Note: No refund here since card was physically written
             return false
         end
         
@@ -717,6 +800,19 @@ function shop_handler.writeRenewalNFCCard(tac, options)
     local baseTime = math.max(currentExpiration, os.epoch("utc"))
     local newExpiration = baseTime + (tier.duration * 24 * 60 * 60 * 1000)
     
+    -- Persist write state before starting
+    nfcWriteState.set("active", {
+        type = "renewal",
+        cardId = newCardId,
+        username = username,
+        accessTag = accessTag,
+        tier = tier,
+        transaction = transaction,
+        originalCard = originalCard,
+        newExpiration = newExpiration,
+        startTime = os.epoch("utc")
+    })
+    
     term.setTextColor(colors.yellow)
     print("Writing new NFC card for renewal...")
     print("New Card ID: " .. SecurityCore.truncateCardId(newCardId))
@@ -758,40 +854,46 @@ function shop_handler.writeRenewalNFCCard(tac, options)
             break
         elseif event == "key" and param1 == keys.q then
             serverNfc.cancelWrite()
+            nfcWriteState.unset("active")
             term.setTextColor(colors.yellow)
             print("Card writing cancelled.")
             term.setTextColor(colors.white)
             if monitor_ui.isAvailable() then
                 monitor_ui.showError("Card writing cancelled")
                 os.sleep(2)
-                monitor_ui.clearSession()
             end
+            refundWithError(transaction, "Renewal card writing cancelled by user")
             return false
         elseif event == "timer" and param1 == timeout then
             serverNfc.cancelWrite()
+            nfcWriteState.unset("active")
             term.setTextColor(colors.red)
             print("Card writing timed out.")
             term.setTextColor(colors.white)
             if monitor_ui.isAvailable() then
                 monitor_ui.showError("Card writing timed out (30 seconds)")
                 os.sleep(3)
-                monitor_ui.clearSession()
             end
+            refundWithError(transaction, "Renewal NFC write timeout - no card placed within 30 seconds")
             return false
         elseif event == "nfc_write_error" then
+            nfcWriteState.unset("active")
             term.setTextColor(colors.red)
             print("NFC write error: " .. tostring(param2))
             term.setTextColor(colors.white)
             if monitor_ui.isAvailable() then
                 monitor_ui.showError("NFC write error: " .. tostring(param2))
                 os.sleep(3)
-                monitor_ui.clearSession()
             end
+            refundWithError(transaction, "Renewal NFC write error: " .. tostring(param2))
             return false
         end
     end
     
     if writeSuccessful then
+        -- Clear persisted write state
+        nfcWriteState.unset("active")
+        
         -- Remove old card and create new one
         tac.cards.unset(originalCard.id)
         
@@ -822,7 +924,6 @@ function shop_handler.writeRenewalNFCCard(tac, options)
             if monitor_ui.isAvailable() then
                 monitor_ui.showError("NFC card written but failed to save renewal data: " .. (error or "Unknown error"))
                 os.sleep(3)
-                monitor_ui.clearSession()
             end
             return false
         end
@@ -845,7 +946,6 @@ function shop_handler.writeRenewalNFCCard(tac, options)
                 ["Note"] = "Old card deactivated"
             })
             os.sleep(5)
-            monitor_ui.clearSession()
         end
         
         return true
@@ -865,8 +965,11 @@ function shop_handler.sendRefund(toAddress, amount, reason, callback)
         return
     end
     
-    -- Send the refund transaction
-    shop.makeTransaction(toAddress, amount, {refund = reason or "Subscription refund"}, function(data)
+    -- Send the refund transaction with error metadata
+    shop.makeTransaction(toAddress, amount, {
+        refund = "true",
+        error = reason or "Subscription refund"
+    }, function(data)
         if data.ok then
             term.setTextColor(colors.green)
             print(string.format("Refund sent: %d KRO to %s", amount, toAddress))

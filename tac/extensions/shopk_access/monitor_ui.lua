@@ -15,6 +15,7 @@ local activeMonitor = nil
 local activeSession = nil
 local touchListener = nil
 local isInUse = false  -- Flag to indicate if monitor is showing interactive UI
+local clearTimer = nil  -- Timer for clearing success/error screens
 
 --- Check if monitor is currently in use (showing interactive UI)
 -- @return boolean - true if monitor is showing interactive screens
@@ -263,6 +264,7 @@ end
 function monitor_ui.showNFCWriting(data)
     if not activeMonitor then return end
     
+    isInUse = true  -- Keep monitor marked as in use during NFC writing
     activeMonitor.setBackgroundColor(colors.black)
     activeMonitor.clear()
     
@@ -310,6 +312,8 @@ end
 function monitor_ui.showSuccess(message, details)
     if not activeMonitor then return end
     
+    isInUse = true  -- Keep monitor locked during success screen
+    
     activeMonitor.setBackgroundColor(colors.black)
     activeMonitor.clear()
     
@@ -341,19 +345,22 @@ function monitor_ui.showSuccess(message, details)
         end
     end
     
-    -- Auto-clear after delay
+    -- Clear session immediately
     activeSession = nil
-    os.startTimer(5) -- Will clear after 5 seconds via timer event
     
-    -- Schedule reset of isInUse flag
-    os.queueEvent("monitor_ui_reset_timer")
-    os.startTimer(6) -- Reset flag after 6 seconds
+    -- Schedule clearing of screen and flag reset after delay
+    -- This allows the success message to stay visible for 5 seconds
+    -- before the monitor can be used for other purposes again
+    if clearTimer then os.cancelTimer(clearTimer) end
+    clearTimer = os.startTimer(5)
 end
 
 --- Show error screen
 -- @param message string - error message
 function monitor_ui.showError(message)
     if not activeMonitor then return end
+    
+    isInUse = true  -- Keep monitor locked during error screen
     
     activeMonitor.setBackgroundColor(colors.black)
     activeMonitor.clear()
@@ -400,13 +407,12 @@ function monitor_ui.showError(message)
         activeMonitor.write(currentLine)
     end
     
-    -- Auto-clear after delay
+    -- Clear session immediately
     activeSession = nil
-    os.startTimer(5)
     
-    -- Schedule reset of isInUse flag
-    os.queueEvent("monitor_ui_reset_timer")
-    os.startTimer(6) -- Reset flag after 6 seconds
+    -- Schedule clearing of screen and flag reset after delay
+    if clearTimer then os.cancelTimer(clearTimer) end
+    clearTimer = os.startTimer(5)
 end
 
 --- Handle touch events
@@ -440,6 +446,15 @@ function monitor_ui.handleTouch(x, y)
     end
 end
 
+--- Handle timer events for clearing screens
+-- @param timerID number - the timer ID that fired
+function monitor_ui.handleTimer(timerID)
+    if clearTimer and timerID == clearTimer then
+        clearTimer = nil
+        monitor_ui.clearSession()
+    end
+end
+
 --- Start touch listener in background
 -- @param tac table - TAC instance
 function monitor_ui.startTouchListener(tac)
@@ -450,11 +465,16 @@ function monitor_ui.startTouchListener(tac)
     -- Register as background process
     tac.registerBackgroundProcess("monitor_ui_touch", function()
         while touchListener do
-            local event, side, x, y = os.pullEvent("monitor_touch")
+            local event, side, x, y = os.pullEvent()
             
-            -- Check if touch is on our monitor
-            if activeMonitor and peripheral.wrap(side) == activeMonitor then
-                monitor_ui.handleTouch(x, y)
+            if event == "monitor_touch" then
+                -- Check if touch is on our monitor
+                if activeMonitor and peripheral.wrap(side) == activeMonitor then
+                    monitor_ui.handleTouch(x, y)
+                end
+            elseif event == "timer" then
+                -- Handle timer events for clearing screens
+                monitor_ui.handleTimer(side)  -- side contains timerID in timer events
             end
         end
     end)
