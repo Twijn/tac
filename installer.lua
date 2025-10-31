@@ -74,7 +74,7 @@ local TAC_INSTALLER = {
             name = "Auto-Updater",
             description = "Enables auto-update of libraries and (eventually) tsc via lib/updater.lua",
             files = {
-                "lib/updater.lua"
+                "tac/extensions/updater.lua"
             }
         }
     },
@@ -82,7 +82,7 @@ local TAC_INSTALLER = {
     -- Default data files
     data_files = {
         "data/settings.json",
-        "data/cards.json", 
+        "data/cards.json",
         "data/doors.json",
         "data/accesslog.json"
     }
