@@ -2,22 +2,17 @@
 -- Version 1.0.0
 -- A comprehensive installer for the TAC system with module management
 
+
+-- List of all required libraries
+local libs = {"cmd", "formui", "persist", "s", "shopk", "tables"}
+
 local TAC_INSTALLER = {
     version = "1.0.0",
     name = "TAC Installer",
     
     -- GitHub configuration
     github = {
-        -- Library files from cc-misc
-        lib_base_url = "https://raw.githubusercontent.com/Twijn/cc-misc/main/util",
-        -- TAC core files from tac repository
         tac_base_url = "https://raw.githubusercontent.com/Twijn/tac/main",
-        lib_repo = {
-            owner = "Twijn",
-            repo = "cc-misc",
-            branch = "main",
-            path = "util"
-        },
         tac_repo = {
             owner = "Twijn",
             repo = "tac",
@@ -173,7 +168,7 @@ function TAC_INSTALLER.install(type, files, baseUrl)
 end
 
 function TAC_INSTALLER.installLibraries()
-    TAC_INSTALLER.install("Library", TAC_INSTALLER.lib_files, TAC_INSTALLER.github.lib_base_url)
+    shell.run("wget", "run", "https://raw.githubusercontent.com/Twijn/cc-misc/main/util/installer.lua", table.unpack(libs))
 end
 
 function TAC_INSTALLER.installCore()
