@@ -4,10 +4,10 @@
 
 
 -- List of all required libraries
-local libs = {"cmd", "formui", "persist", "s", "shopk", "tables", "shopk_node"}
+local libs = {"cmd", "formui", "persist", "s", "shopk", "tables", "updater"}
 
 local TAC_INSTALLER = {
-    version = "1.1.0",
+    version = "1.1.1",
     name = "TAC Installer",
     
     -- GitHub configuration
@@ -68,6 +68,13 @@ local TAC_INSTALLER = {
             description = "Monitor and display shop information",
             files = {
                 "tac/extensions/shop_monitor.lua"
+            }
+        },
+        updater = {
+            name = "Auto-Updater",
+            description = "Enables auto-update of libraries and (eventually) tsc via lib/updater.lua",
+            files = {
+                "lib/updater.lua"
             }
         }
     },
