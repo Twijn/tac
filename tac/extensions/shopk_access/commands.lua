@@ -14,6 +14,7 @@ local ui = require("tac.extensions.shopk_access.ui")
 local shop = require("tac.extensions.shopk_access.shop")
 local utils = require("tac.extensions.shopk_access.utils")
 local subscriptions = require("tac.extensions.shopk_access.subscriptions")
+local interactive_list = require("tac.lib.interactive_list")
 
 local commands = {}
 
@@ -128,7 +129,8 @@ end
 function commands.listTiers(tac, d)
     local ACCESS_CONFIG = config.get()
     
-    d.mess("=== Subscription Tiers ===")
+    -- Build list of tiers with their data
+    local tiersList = {}
     for pattern, tier in pairs(ACCESS_CONFIG.subscription_tiers) do
         local availableSlots, occupiedSlots = slots.getAvailableSlots(tac, pattern)
         local allMatchingTags = slots.getAllMatchingTags(tac, pattern)
@@ -136,28 +138,64 @@ function commands.listTiers(tac, d)
         for _ in pairs(allMatchingTags) do
             totalSlots = totalSlots + 1
         end
-        local usedSlots = 0
-        for _ in pairs(occupiedSlots) do
-            usedSlots = usedSlots + 1
-        end
         
-        d.mess(string.format("%s (%s) - %s", tier.name, pattern, tier.description))
-        d.mess(string.format("  Category: %s", tier.category))
-        d.mess(string.format("  Price: %d %s, Renewal: %d %s", tier.price, ACCESS_CONFIG.general_settings.currency_name, tier.renewal_price, ACCESS_CONFIG.general_settings.currency_name))
-        d.mess(string.format("  Duration: %d days", tier.duration))
-        d.mess("  Slots: " .. #availableSlots .. " available, " .. 
-               totalSlots - #availableSlots .. " occupied, " .. 
-               totalSlots .. " total")
-        
-        if #availableSlots > 0 then
-            local sampleSlots = {}
-            for i = 1, math.min(3, #availableSlots) do
-                table.insert(sampleSlots, availableSlots[i])
-            end
-            local more = #availableSlots > 3 and " (+" .. (#availableSlots - 3) .. " more)" or ""
-            d.mess("  Available: " .. table.concat(sampleSlots, ", ") .. more)
-        end
+        table.insert(tiersList, {
+            pattern = pattern,
+            tier = tier,
+            availableSlots = availableSlots,
+            occupiedSlots = occupiedSlots,
+            totalSlots = totalSlots
+        })
     end
+    
+    -- Sort by tier name
+    table.sort(tiersList, function(a, b)
+        return a.tier.name < b.tier.name
+    end)
+    
+    if #tiersList == 0 then
+        d.mess("No subscription tiers configured")
+        return
+    end
+    
+    -- Show interactive list
+    interactive_list.show({
+        title = "Subscription Tiers",
+        items = tiersList,
+        formatItem = function(item)
+            local occupied = item.totalSlots - #item.availableSlots
+            return string.format("%s (%d/%d slots)", item.tier.name, occupied, item.totalSlots)
+        end,
+        formatDetails = function(item)
+            local details = {}
+            table.insert(details, "Name: " .. item.tier.name)
+            table.insert(details, "Pattern: " .. item.pattern)
+            table.insert(details, "Category: " .. item.tier.category)
+            table.insert(details, "Description: " .. item.tier.description)
+            table.insert(details, "")
+            table.insert(details, string.format("Price: %d %s", item.tier.price, ACCESS_CONFIG.general_settings.currency_name))
+            table.insert(details, string.format("Renewal: %d %s", item.tier.renewal_price, ACCESS_CONFIG.general_settings.currency_name))
+            table.insert(details, string.format("Duration: %d days", item.tier.duration))
+            table.insert(details, "")
+            
+            local occupied = item.totalSlots - #item.availableSlots
+            table.insert(details, string.format("Slots: %d available, %d occupied, %d total", 
+                #item.availableSlots, occupied, item.totalSlots))
+            
+            if #item.availableSlots > 0 then
+                table.insert(details, "")
+                table.insert(details, "Available Slots:")
+                for i = 1, math.min(10, #item.availableSlots) do
+                    table.insert(details, "  " .. item.availableSlots[i])
+                end
+                if #item.availableSlots > 10 then
+                    table.insert(details, "  ... and " .. (#item.availableSlots - 10) .. " more")
+                end
+            end
+            
+            return details
+        end
+    })
 end
 
 --- Remove a tier
@@ -226,31 +264,74 @@ end
 function commands.listActiveSubscriptions(tac, d)
     local active = subscriptions.getActiveSubscriptions(tac)
     
-    d.mess("=== Active Subscriptions ===")
     if #active == 0 then
         d.mess("No active subscriptions found")
         return
     end
     
-    for i, sub in ipairs(active) do
-        local cardData = sub.cardData
-        local tier = sub.tier
-        
-        d.mess(string.format("%d. %s", i, cardData.name or "Unknown"))
-        d.mess(string.format("   Type: %s (%s)", tier and tier.name or "Unknown", tier and tier.category or "Unknown"))
-        d.mess(string.format("   Expires: %s (%d days)", utils.formatExpiration(cardData.expiration), sub.daysRemaining))
-        
-        if cardData.metadata and cardData.metadata.purchaseValue then
-            d.mess(string.format("   Original: %d %s", cardData.metadata.purchaseValue, config.get().general_settings.currency_name))
-        end
-        
-        if cardData.id then
-            d.mess(string.format("   ID: %s", cardData.id:sub(1, 12) .. "..."))
-        end
-        d.mess("")
-    end
+    -- Sort by days remaining (soonest expiration first)
+    table.sort(active, function(a, b)
+        return a.daysRemaining < b.daysRemaining
+    end)
     
-    d.mess(string.format("Total: %d active subscriptions", #active))
+    local ACCESS_CONFIG = config.get()
+    
+    interactive_list.show({
+        title = string.format("Active Subscriptions (%d)", #active),
+        items = active,
+        formatItem = function(item)
+            local cardData = item.cardData
+            local tier = item.tier
+            local expiryBadge = item.daysRemaining <= 7 and " [!]" or ""
+            return string.format("%s - %s (%dd)%s", 
+                cardData.name or "Unknown",
+                tier and tier.name or "Unknown",
+                item.daysRemaining,
+                expiryBadge)
+        end,
+        formatDetails = function(item)
+            local cardData = item.cardData
+            local tier = item.tier
+            local details = {}
+            
+            table.insert(details, "Name: " .. (cardData.name or "Unknown"))
+            table.insert(details, "Type: " .. (tier and tier.name or "Unknown"))
+            table.insert(details, "Category: " .. (tier and tier.category or "Unknown"))
+            table.insert(details, "")
+            table.insert(details, "Expires: " .. utils.formatExpiration(cardData.expiration))
+            table.insert(details, string.format("Days Remaining: %d", item.daysRemaining))
+            
+            if item.daysRemaining <= 7 then
+                table.insert(details, "WARNING: Expiring soon!")
+            end
+            
+            table.insert(details, "")
+            
+            if cardData.metadata and cardData.metadata.purchaseValue then
+                table.insert(details, string.format("Original Purchase: %d %s", 
+                    cardData.metadata.purchaseValue, 
+                    ACCESS_CONFIG.general_settings.currency_name))
+            end
+            
+            if tier then
+                table.insert(details, string.format("Renewal Price: %d %s", 
+                    tier.renewal_price, 
+                    ACCESS_CONFIG.general_settings.currency_name))
+            end
+            
+            if cardData.username then
+                table.insert(details, "Username: " .. cardData.username)
+            end
+            
+            if cardData.id then
+                table.insert(details, "")
+                table.insert(details, "Card ID:")
+                table.insert(details, "  " .. cardData.id)
+            end
+            
+            return details
+        end
+    })
 end
 
 --- Show expired subscriptions
@@ -259,26 +340,51 @@ end
 function commands.listExpiredSubscriptions(tac, d)
     local expired = subscriptions.getExpiredSubscriptions(tac)
     
-    d.mess("=== Expired Subscriptions ===")
     if #expired == 0 then
         d.mess("No expired subscriptions found")
         return
     end
     
-    for i, sub in ipairs(expired) do
-        local cardData = sub.cardData
-        
-        d.mess(string.format("%d. %s", i, cardData.name or "Unknown"))
-        d.mess(string.format("   Expired: %s (%d days ago)", utils.formatExpiration(cardData.expiration), sub.daysExpired))
-        
-        if cardData.id then
-            d.mess(string.format("   ID: %s", cardData.id:sub(1, 12) .. "..."))
-        end
-        d.mess("")
-    end
+    -- Sort by days expired (most recently expired first)
+    table.sort(expired, function(a, b)
+        return a.daysExpired < b.daysExpired
+    end)
     
-    d.mess(string.format("Total: %d expired subscriptions", #expired))
-    d.mess("Use 'shop subscriptions cleanup' to remove old expired subscriptions")
+    interactive_list.show({
+        title = string.format("Expired Subscriptions (%d)", #expired),
+        items = expired,
+        formatItem = function(item)
+            local cardData = item.cardData
+            return string.format("%s (%d days ago)", 
+                cardData.name or "Unknown",
+                item.daysExpired)
+        end,
+        formatDetails = function(item)
+            local cardData = item.cardData
+            local details = {}
+            
+            table.insert(details, "Name: " .. (cardData.name or "Unknown"))
+            table.insert(details, "")
+            table.insert(details, "Expired: " .. utils.formatExpiration(cardData.expiration))
+            table.insert(details, string.format("Days Ago: %d", item.daysExpired))
+            
+            if cardData.username then
+                table.insert(details, "")
+                table.insert(details, "Username: " .. cardData.username)
+            end
+            
+            if cardData.id then
+                table.insert(details, "")
+                table.insert(details, "Card ID:")
+                table.insert(details, "  " .. cardData.id)
+            end
+            
+            table.insert(details, "")
+            table.insert(details, "Use 'shop subscriptions cleanup' to remove old expired subscriptions")
+            
+            return details
+        end
+    })
 end
 
 --- Interactive subscription cancellation
