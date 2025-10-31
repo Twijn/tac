@@ -74,11 +74,79 @@
             margin-left: 0.5rem;
             vertical-align: middle;
         }
+        .install-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+            color: white;
+        }
+        .install-box h2 {
+            margin-top: 0;
+            color: white;
+            border: none;
+        }
+        .install-box p {
+            opacity: 0.95;
+            margin-bottom: 1rem;
+        }
+        .install-command {
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 1rem 1.5rem;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 1rem;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .install-command code {
+            background: none;
+            color: #fff;
+            padding: 0;
+            font-size: 1em;
+        }
+        .copy-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .copy-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        .copy-button:active {
+            transform: translateY(0);
+        }
+        .copy-button.copied {
+            background: rgba(76, 175, 80, 0.8);
+            border-color: rgba(76, 175, 80, 1);
+        }
     </style>
 </head>
 <body>
     <h1>TAC Documentation</h1>
     <p>Terminal Access Control (TAC) is a comprehensive access control system for ComputerCraft that provides card-based authentication, extensible modules, and integration with external services.</p>
+    
+    <div class="install-box">
+        <h2>Quick Install</h2>
+        <p>Get started with TAC in seconds! Run this command in ComputerCraft:</p>
+        <div class="install-command">
+            <code>wget run https://raw.githubusercontent.com/Twijn/tac/main/installer.lua</code>
+            <button class="copy-button" onclick="copyInstallCommand()">Copy</button>
+        </div>
+        <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 0.5rem;">This will download and run the TAC installer, which will guide you through the setup process.</p>
+    </div>
     
     <h2>Core Modules</h2>
     <div class="module">
@@ -162,4 +230,22 @@
         <p>Provides auto-update functionality for TAC libraries and (eventually) the TAC system itself via lib/updater.lua. This extension checks for updates on startup and provides commands to check for and ins...</p>
     </div>
 </body>
+<script>
+function copyInstallCommand() {
+    const command = 'wget run https://raw.githubusercontent.com/Twijn/tac/main/installer.lua';
+    navigator.clipboard.writeText(command).then(() => {
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        button.classList.add('copied');
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.classList.remove('copied');
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy to clipboard');
+    });
+}
+</script>
 </html>
