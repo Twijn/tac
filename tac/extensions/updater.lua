@@ -8,13 +8,13 @@
     
     @module updater
     @author Twijn
-    @version 1.1.0
+    @version 1.1.1
     @license MIT
 ]]
 
 local UpdaterExtension = {
     name = "updater",
-    version = "1.1.0",
+    version = "1.1.1",
     description = "Auto-update TAC core, extensions, and libraries",
     author = "Twijn",
     dependencies = {},
@@ -22,7 +22,7 @@ local UpdaterExtension = {
 }
 
 -- Configuration
-local API_BASE = "https://twijn.github.io/tac/api"
+local API_BASE = "https://tac.twijn.dev/api"
 local GITHUB_RAW = "https://raw.githubusercontent.com/Twijn/tac/main"
 
 -- Helper functions
