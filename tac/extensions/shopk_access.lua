@@ -7,7 +7,7 @@
     
     @module tac.extensions.shopk_access
     @author Twijn
-    @version 1.0.2
+    @version 1.0.3
     
     @example
     -- This extension is loaded automatically by TAC.
@@ -31,7 +31,7 @@
 
 local ShopKAccessExtension = {
     name = "shopk_access",
-    version = "1.0.2",
+    version = "1.0.3",
     description = "Sell access tags via ShopK/Kromer payments",
     author = "Twijn",
     dependencies = {},
@@ -94,7 +94,7 @@ function ShopKAccessExtension.init(tac)
                 door = door,
                 message = "Access denied: Card expired"
             })
-            return false  -- Deny access
+            return false, "CARD EXPIRED"  -- Deny access with message for sign
         end
         return true  -- Allow access check to continue
     end)

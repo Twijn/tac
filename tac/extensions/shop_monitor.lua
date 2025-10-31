@@ -7,7 +7,7 @@
     
     @module tac.extensions.shop_monitor
     @author Twijn
-    @version 1.0.1
+    @version 1.0.2
     
     @example
     -- This extension is loaded automatically by TAC.
@@ -30,7 +30,7 @@
 
 local ShopMonitorExtension = {
     name = "shop_monitor",
-    version = "1.0.1",
+    version = "1.0.2",
     description = "Display available shop items on a monitor",
     author = "Twijn",
     dependencies = {},
@@ -467,7 +467,7 @@ function ShopMonitorExtension.init(tac)
     tac.registerCommand("monitor", {
         description = "Configure and manage shop monitor display",
         complete = function(args)
-            if #args == 0 then
+            if #args > 0 then
                 return {"config", "start", "stop", "update", "debug"}
             end
             return {}

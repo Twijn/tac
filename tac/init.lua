@@ -8,7 +8,7 @@
     
     @module tac
     @author Twijn
-    @version 1.3.0
+    @version 1.4.0
     @license MIT
     
     @example
@@ -48,7 +48,7 @@
 ]]
 
 local TAC = {
-    version = "1.3.0",
+    version = "1.4.0",
     name = "tAC"
 }
 
@@ -252,19 +252,20 @@ function TAC.new(config)
     --- Execute hooks
     --
     -- Triggers all registered callbacks for a specific hook point.
-    -- If any callback returns false, the hook execution stops and returns false.
+    -- If any callback returns false, the hook execution stops and returns false with an optional message.
     --
     ---@param hookName string Name of the hook to execute
     ---@param ... any Arguments to pass to all hook callbacks
     ---@return boolean False if any hook returned false (action denied), true otherwise
-    ---@usage local allowed = tac.executeHooks("beforeAccess", card, door, data, side)
+    ---@return string|nil Optional message from hook (e.g. reason for denial)
+    ---@usage local allowed, message = tac.executeHooks("beforeAccess", card, door, data, side)
     function instance.executeHooks(hookName, ...)
         if instance.hooks[hookName] then
             for _, callback in ipairs(instance.hooks[hookName]) do
-                local result = callback(...)
-                -- If any hook returns false, deny the action
+                local result, message = callback(...)
+                -- If any hook returns false, deny the action and pass along the message
                 if result == false then
-                    return false
+                    return false, message
                 end
             end
         end
@@ -416,9 +417,12 @@ function TAC.new(config)
             end
 
             -- Execute before access hooks - if any hook returns false, deny access
-            local hookResult = instance.executeHooks("beforeAccess", card, door, data, side)
+            local hookResult, hookMessage = instance.executeHooks("beforeAccess", card, door, data, side)
             if not hookResult then
-                -- Hook denied access, execute after access hooks and continue
+                -- Hook denied access, show message on sign and execute after access hooks
+                if door then
+                    TAC.Hardware.showAccessDenied(door, hookMessage or "ACCESS DENIED")
+                end
                 instance.executeHooks("afterAccess", false, "hook_denied", card, door)
                 goto continue
             end
