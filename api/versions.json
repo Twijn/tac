@@ -1,6 +1,11 @@
 {
   "tac": {
     "version": "1.4.0",
+    "init": {
+      "version": "1.4.0",
+      "path": "tac/init.lua",
+      "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/init.lua"
+    },
     "core": {
       "card_manager": {
         "version": "1.0.1",
@@ -50,7 +55,7 @@
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_node.lua"
       },
       "updater": {
-        "version": "1.1.1",
+        "version": "1.1.2",
         "path": "tac/extensions/updater.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/updater.lua"
       }
