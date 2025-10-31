@@ -155,7 +155,7 @@
 <body>
     <div class="back-link"><a href="index.html">← Back to index</a></div>
     <div class="header">
-        <h1>tac.init <span class="version-badge">v1.3.0</span></h1>
+        <h1>tac.init <span class="version-badge">v1.4.0</span></h1>
         <p>The main package interface for the TAC access control system. This module provides the core functionality for managing card-based access control, including extension management, command registration, hooks, and background process management.</p>
         <div class='metadata'> Author: Twijn • License: MIT</div>
         <a href="https://github.com/Twijn/tac/blob/main/tac/init.lua" class="github-link" target="_blank">View on GitHub →</a>
@@ -224,11 +224,11 @@ return MyExtension</code></pre>
                 <li><code>hookName</code> (string): Name of the hook to execute</li>
             </ul>
         </div>
-        <div class='returns'><strong>Returns:</strong> boolean False if any hook returned false (action denied), true otherwise</div>
+        <div class='returns'><strong>Returns:</strong> string|nil Optional message from hook (e.g. reason for denial)</div>
     </div>
     <div class='function'>
         <h3><code>instance.checkExtensionSettings(d)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L303' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L304' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -238,12 +238,12 @@ return MyExtension</code></pre>
     </div>
     <div class='function'>
         <h3><code>instance.getServerNfc()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L373' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L374' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <div class='returns'><strong>Returns:</strong> table|nil Server NFC reader peripheral, or nil if not configured</div>
     </div>
     <div class='function'>
         <h3><code>instance.require(extensionName)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L388' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L389' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -254,27 +254,27 @@ return MyExtension</code></pre>
     </div>
     <div class='function'>
         <h3><code>instance.accessLoop()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L400' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L401' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Main access control loop</p>
     </div>
     <div class='function'>
         <h3><code>instance.commandLoop()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L501' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L505' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Command line interface loop</p>
     </div>
     <div class='function'>
         <h3><code>instance.start()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L573' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L577' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Start the TAC system</p>
     </div>
     <div class='function'>
         <h3><code>instance.shutdown()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L676' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L680' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Shutdown the TAC system gracefully</p>
     </div>
     <div class='function'>
         <h3><code>TAC.loadExtensions(instance, options)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L699' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L703' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
