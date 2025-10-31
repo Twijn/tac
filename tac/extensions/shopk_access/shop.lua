@@ -25,9 +25,21 @@ function shop_handler.startShop(tac)
     local ACCESS_CONFIG = config.get()
     local shopk = require("lib.shopk")
     
-    shop = shopk({
+    -- Build shop configuration
+    local shopConfig = {
         privatekey = ACCESS_CONFIG.private_key
-    })
+    }
+    
+    -- Inject syncNode if configured
+    local syncNode = tac.settings.get("shopk_syncNode")
+    if syncNode then
+        shopConfig.syncNode = syncNode
+        term.setTextColor(colors.cyan)
+        print("Using custom Kromer node: " .. syncNode)
+        term.setTextColor(colors.white)
+    end
+    
+    shop = shopk(shopConfig)
 
     -- Set up transaction handler immediately
     shop.on("transaction", function(transaction)
