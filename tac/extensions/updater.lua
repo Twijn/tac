@@ -4,7 +4,7 @@
 
 local UpdaterExtension = {
     name = "updater",
-    version = "1.0.0",
+    version = "1.0.1",
     description = "Auto-update TAC libraries and (eventually) tac via lib/updater.lua"
 }
 
@@ -19,11 +19,13 @@ function UpdaterExtension.init(tac)
         if ok then
             local updates = updatesOrErr
             if type(updates) == "table" and #updates > 0 then
+                term.setTextColor(colors.yellow)
                 print("TAC Updater: Updates available for the following libraries:")
                 for _, lib in ipairs(updates) do
-                    print(string.format("- %s: %s → %s", lib.name, lib.current or "?", lib.latest or "?"))
+                    print(string.format("- %s: %s -> %s", lib.name, lib.current or "?", lib.latest or "?"))
                 end
                 print("Run 'updater update' to update.")
+                term.setTextColor(colors.white)
             end
         end
     end
@@ -50,7 +52,7 @@ function UpdaterExtension.init(tac)
                     else
                         d.mess("Updates available for the following libraries:")
                         for _, lib in ipairs(updates) do
-                            d.mess(string.format("- %s: %s → %s", lib.name, lib.current or "?", lib.latest or "?"))
+                            d.mess(string.format("- %s: %s -> %s", lib.name, lib.current or "?", lib.latest or "?"))
                         end
                     end
                 end
