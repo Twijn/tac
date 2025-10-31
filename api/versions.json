@@ -33,6 +33,33 @@
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/core/security.lua"
       }
     },
+    "commands": {
+      "modules": {
+        "version": "0.0.0",
+        "path": "tac/commands/modules.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/commands/modules.lua"
+      },
+      "logs": {
+        "version": "0.0.0",
+        "path": "tac/commands/logs.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/commands/logs.lua"
+      },
+      "door": {
+        "version": "0.0.0",
+        "path": "tac/commands/door.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/commands/door.lua"
+      },
+      "card": {
+        "version": "0.0.0",
+        "path": "tac/commands/card.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/commands/card.lua"
+      },
+      "processes": {
+        "version": "0.0.0",
+        "path": "tac/commands/processes.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/commands/processes.lua"
+      }
+    },
     "extensions": {
       "_example": {
         "version": "1.0.1",
@@ -55,7 +82,7 @@
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_node.lua"
       },
       "updater": {
-        "version": "1.1.2",
+        "version": "1.1.4",
         "path": "tac/extensions/updater.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/updater.lua"
       }
