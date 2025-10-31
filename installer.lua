@@ -7,7 +7,7 @@
 local libs = {"cmd", "formui", "persist", "s", "shopk", "tables", "updater"}
 
 local TAC_INSTALLER = {
-    version = "1.1.1",
+    version = "1.1.2",
     name = "TAC Installer",
     
     -- GitHub configuration
