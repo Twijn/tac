@@ -43,6 +43,19 @@ function commands.handleShopCommand(args, tac, d)
     elseif cmd == "stop" then
         shop.stopShop(d)
         
+    elseif cmd == "restart" then
+        d.mess("Restarting shop...")
+        shop.stopShop(d)
+        os.sleep(1) -- Give it a moment to fully stop
+        
+        local ACCESS_CONFIG = config.get()
+        if not ACCESS_CONFIG.private_key or ACCESS_CONFIG.private_key == "" then
+            d.err("No private key configured! Use 'shop config' first.")
+        else
+            shop.startShop(tac)
+            d.mess("Shop restarted")
+        end
+        
     elseif cmd == "status" then
         commands.showStatus(tac, d)
         
@@ -62,7 +75,7 @@ function commands.handleShopCommand(args, tac, d)
         commands.resetData(tac, d)
         
     else
-        d.err("Unknown shop command! Use: config, start, stop, status, tiers, sales, subscriptions, cleanup, reset")
+        d.err("Unknown shop command! Use: config, start, stop, restart, status, tiers, sales, subscriptions, cleanup, reset")
     end
 end
 
@@ -439,7 +452,7 @@ end
 -- @return table - completion options
 function commands.getCompletions(args)
     if #args == 1 then
-        return {"config", "status", "sales", "reset", "subscriptions", "cleanup", "tiers", "start", "stop"}
+        return {"config", "status", "sales", "reset", "subscriptions", "cleanup", "tiers", "start", "stop", "restart"}
     elseif #args == 2 and args[1]:lower() == "tiers" then
         return {"list", "add", "remove", "edit"}
     elseif #args == 2 and args[1]:lower() == "subscriptions" then

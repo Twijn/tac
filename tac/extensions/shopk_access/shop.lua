@@ -90,11 +90,19 @@ function shop_handler.startShop(tac)
         print("Starting ShopK in background process...")
         term.setTextColor(colors.white)
         
-        local success, err = pcall(shop.run)
-        if not success then
-            term.setTextColor(colors.red)
-            print("ShopK error: " .. tostring(err))
-            term.setTextColor(colors.white)
+        -- Keep the process alive even if shop closes
+        while true do
+            if shop then
+                local success, err = pcall(shop.run)
+                if not success then
+                    term.setTextColor(colors.red)
+                    print("ShopK error: " .. tostring(err))
+                    term.setTextColor(colors.white)
+                end
+            end
+            
+            -- Sleep to avoid busy-waiting when shop is stopped
+            os.sleep(1)
         end
     end)
     
