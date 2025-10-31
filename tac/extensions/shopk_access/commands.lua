@@ -71,7 +71,6 @@ end
 -- @param d table - display interface
 function commands.showStatus(tac, d)
     local status = shop.getStatus(tac)
-    local ACCESS_CONFIG = config.get()
     
     d.mess("=== ShopK Status ===")
     d.mess("Running: " .. (status.running and "Yes" or "No"))
@@ -79,42 +78,6 @@ function commands.showStatus(tac, d)
     
     if status.address then
         d.mess("Shop Address: " .. status.address)
-    end
-    
-    d.mess("")
-    d.mess("=== Subscription Tiers ===")
-    for pattern, tier in pairs(ACCESS_CONFIG.subscription_tiers) do
-        local availableSlots, occupiedSlots = slots.getAvailableSlots(tac, pattern)
-        local allMatchingTags = slots.getAllMatchingTags(tac, pattern)
-        local totalSlots = 0
-        local usedSlots = 0
-        
-        -- Count total slots that exist (from doors/cards)
-        for _ in pairs(allMatchingTags) do
-            totalSlots = totalSlots + 1
-        end
-        
-        -- Count used slots
-        for _ in pairs(occupiedSlots) do
-            usedSlots = usedSlots + 1
-        end
-        
-        d.mess(string.format("%s (%s)", tier.name, pattern))
-        d.mess(string.format("  Category: %s", tier.category))
-        d.mess(string.format("  Price: %d %s (%d days)", tier.price, ACCESS_CONFIG.general_settings.currency_name, tier.duration))
-        d.mess(string.format("  Renewal: %d %s", tier.renewal_price, ACCESS_CONFIG.general_settings.currency_name))
-        d.mess(string.format("  Slots: %d used / %d total (%d available)", usedSlots, totalSlots, #availableSlots))
-        d.mess(string.format("  Features: %s", table.concat(tier.features, ", ")))
-        
-        if #availableSlots > 0 then
-            local nextSlot = slots.getNextAvailableSlot(tac, pattern)
-            if nextSlot then
-                d.mess("    Next available: " .. nextSlot)
-            end
-        else
-            d.mess("    No slots available")
-        end
-        d.mess("")
     end
 end
 
