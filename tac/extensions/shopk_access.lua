@@ -7,7 +7,7 @@
     
     @module tac.extensions.shopk_access
     @author Twijn
-    @version 1.0.7
+    @version 1.1.0
     
     @example
     -- This extension is loaded automatically by TAC.
@@ -31,8 +31,8 @@
 
 local ShopKAccessExtension = {
     name = "shopk_access",
-    version = "1.0.7",
-    description = "Sell access tags via ShopK/Kromer payments",
+    version = "1.1.0",
+    description = "Sell access tags via ShopK/Kromer payments with monitor UI",
     author = "Twijn",
     dependencies = {},
     optional_dependencies = {}
@@ -43,6 +43,7 @@ local utils = require("tac.extensions.shopk_access.utils")
 local config = require("tac.extensions.shopk_access.config")
 local slots = require("tac.extensions.shopk_access.slots")
 local ui = require("tac.extensions.shopk_access.ui")
+local monitor_ui = require("tac.extensions.shopk_access.monitor_ui")
 local shop = require("tac.extensions.shopk_access.shop")
 local commands = require("tac.extensions.shopk_access.commands")
 
@@ -64,6 +65,13 @@ function ShopKAccessExtension.init(tac)
     
     -- Load configuration
     config.load(tac)
+    
+    -- Initialize monitor UI (auto-detects monitor)
+    local monitorInitialized = monitor_ui.init(tac)
+    if monitorInitialized then
+        print("Monitor UI initialized for interactive purchases")
+        monitor_ui.startTouchListener(tac)
+    end
     
     -- Auto-start shop if private key is configured
     local ACCESS_CONFIG = config.get()
