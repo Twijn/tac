@@ -23,39 +23,74 @@ function ProcessesCommand.create(tac)
             local cmd = args[1] or "list"
             
             if cmd == "list" then
-                d.mess("=== Background Processes ===")
-                d.mess("")
+                local interactiveList = require("tac.lib.interactive_list")
                 
-                local count = 0
-                
+                -- Convert processes to list format
+                local processItems = {}
                 for name, _ in pairs(tac.backgroundProcesses) do
                     local status = tac.processStatus[name]
-                    
-                    if status then
-                        if status.status == "running" then
-                            term.setTextColor(colors.lime)
-                        elseif status.status == "crashed" then
-                            term.setTextColor(colors.red)
-                        else
-                            term.setTextColor(colors.yellow)
+                    table.insert(processItems, {
+                        name = name,
+                        status = status
+                    })
+                end
+                
+                -- Sort by name
+                table.sort(processItems, function(a, b) return a.name < b.name end)
+                
+                if #processItems == 0 then
+                    d.mess("No background processes registered")
+                    return
+                end
+                
+                -- Show interactive list
+                interactiveList.show({
+                    title = "Background Processes",
+                    items = processItems,
+                    formatItem = function(proc)
+                        local statusText = ""
+                        if proc.status then
+                            statusText = " [" .. proc.status.status:upper() .. "]"
                         end
-                        d.mess(string.format("  - %s [%s]", name, status.status:upper()))
-                    else
-                        term.setTextColor(colors.white)
-                        d.mess(string.format("  - %s", name))
+                        return proc.name .. statusText
+                    end,
+                    formatDetails = function(proc)
+                        local details = {}
+                        table.insert(details, "Process: " .. proc.name)
+                        table.insert(details, "")
+                        
+                        if proc.status then
+                            table.insert(details, "Status: " .. proc.status.status)
+                            
+                            if proc.status.startTime then
+                                local uptime = (os.epoch("utc") - proc.status.startTime) / 1000
+                                table.insert(details, string.format("Uptime: %.1f seconds", uptime))
+                            end
+                            
+                            if proc.status.lastError then
+                                table.insert(details, "")
+                                table.insert(details, "Last Error:")
+                                table.insert(details, "  " .. proc.status.lastError)
+                            end
+                            
+                            if proc.status.crashCount and proc.status.crashCount > 0 then
+                                table.insert(details, "")
+                                table.insert(details, "Crash Count: " .. proc.status.crashCount)
+                            end
+                            
+                            if proc.status.restartCount and proc.status.restartCount > 0 then
+                                table.insert(details, "Restart Count: " .. proc.status.restartCount)
+                            end
+                        else
+                            table.insert(details, "Status: Unknown")
+                        end
+                        
+                        return details
                     end
-                    count = count + 1
-                end
+                })
                 
-                term.setTextColor(colors.white)
-                if count == 0 then
-                    d.mess("  No background processes registered")
-                else
-                    d.mess("")
-                    d.mess(string.format("Total: %d process%s", count, count == 1 and "" or "es"))
-                end
-                
-                sleep()
+                term.clear()
+                term.setCursorPos(1, 1)
                 
             elseif cmd == "status" then
                 local processName = args[2]

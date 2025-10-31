@@ -88,7 +88,50 @@ function DoorCommand.create(tac)
                 d.err("Door '" .. doorName .. "' not found!")
                 
             elseif cmd == "list" then
-                d.printTable(tac.doors.getAll())
+                local interactiveList = require("tac.lib.interactive_list")
+                local allDoors = tac.doors.getAll()
+                
+                -- Convert doors to list format
+                local doorItems = {}
+                for reader, doorData in pairs(allDoors) do
+                    table.insert(doorItems, {
+                        name = doorData.name,
+                        reader = reader,
+                        relay = doorData.relay,
+                        sign = doorData.sign,
+                        tags = doorData.tags
+                    })
+                end
+                
+                -- Sort by name
+                table.sort(doorItems, function(a, b) return a.name < b.name end)
+                
+                if #doorItems == 0 then
+                    d.mess("No doors configured.")
+                    return
+                end
+                
+                -- Show interactive list
+                interactiveList.show({
+                    title = "Configured Doors",
+                    items = doorItems,
+                    formatItem = function(door) return door.name end,
+                    formatDetails = function(door)
+                        local details = {}
+                        table.insert(details, "Name: " .. door.name)
+                        table.insert(details, "")
+                        table.insert(details, "Hardware:")
+                        table.insert(details, "  Reader: " .. (door.reader or "None"))
+                        table.insert(details, "  Relay:  " .. (door.relay or "None"))
+                        table.insert(details, "  Sign:   " .. (door.sign or "None"))
+                        table.insert(details, "")
+                        table.insert(details, "Tags: " .. table.concat(door.tags or {}, ", "))
+                        return details
+                    end
+                })
+                
+                term.clear()
+                term.setCursorPos(1, 1)
                 
             elseif cmd == "edit" then
                 local doorName = table.concat(args, " ", 2)

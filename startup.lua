@@ -18,16 +18,7 @@ local TAC = require("tac.init")
 local tac = TAC.new({
   -- Add any custom configuration here
   name = "TAC Access Control System",
-  version = "1.0.0"
 })
-
--- Start the TAC system
-term.setTextColor(colors.cyan)
-print("+======================================+")
-print("|     TAC Access Control System        |")
-print("|            Version 1.0.0             |")
-print("+======================================+")
-term.setTextColor(colors.white)
 
 -- Load and register extensions
 term.setTextColor(colors.yellow)

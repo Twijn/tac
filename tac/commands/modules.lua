@@ -38,41 +38,77 @@ function ModulesCommand.create(tac)
             local cmd = args[1] or "list"
             
             if cmd == "list" then
-                -- Show loaded modules
-                d.mess("=== Loaded TAC Modules ===")
-                local count = 0
+                local interactiveList = require("tac.lib.interactive_list")
+                
+                -- Collect all modules (loaded and disabled)
+                local moduleItems = {}
+                
+                -- Add loaded modules
                 for name, ext in pairs(tac.extensions) do
-                    d.mess(string.format("  %s (v%s): %s", name, ext.version or "unknown", ext.description or "No description"))
-                    count = count + 1
+                    table.insert(moduleItems, {
+                        name = name,
+                        version = ext.version or "unknown",
+                        description = ext.description or "No description",
+                        author = ext.author,
+                        enabled = true
+                    })
                 end
                 
-                if count == 0 then
-                    d.mess("  No modules loaded")
-                end
-                
-                -- Show available but disabled modules
-                d.mess("")
-                d.mess("=== Disabled Modules ===")
+                -- Add disabled modules
                 local success, files = pcall(fs.list, "tac/extensions")
-                local disabledCount = 0
                 if success then
                     for _, filename in ipairs(files) do
                         if filename:match("%.lua$") and not fs.isDir("tac/extensions/" .. filename) then
                             local extName = filename:gsub("%.lua$", "")
                             if extName:match("^_") then
                                 local displayName = extName:gsub("^_", "")
-                                d.mess(string.format("  %s (disabled)", displayName))
-                                disabledCount = disabledCount + 1
+                                table.insert(moduleItems, {
+                                    name = displayName,
+                                    version = "unknown",
+                                    description = "Module is disabled",
+                                    enabled = false
+                                })
                             end
                         end
                     end
                 end
                 
-                if disabledCount == 0 then
-                    d.mess("  No disabled modules")
+                -- Sort by name
+                table.sort(moduleItems, function(a, b) return a.name < b.name end)
+                
+                if #moduleItems == 0 then
+                    d.mess("No modules available")
+                    return
                 end
                 
-                sleep()
+                -- Show interactive list
+                interactiveList.show({
+                    title = "TAC Extensions",
+                    items = moduleItems,
+                    formatItem = function(mod)
+                        local statusIcon = mod.enabled and "✓" or "✗"
+                        return string.format("%s %s (v%s)", statusIcon, mod.name, mod.version)
+                    end,
+                    formatDetails = function(mod)
+                        local details = {}
+                        table.insert(details, "Name: " .. mod.name)
+                        table.insert(details, "Version: " .. mod.version)
+                        table.insert(details, "Status: " .. (mod.enabled and "Enabled" or "Disabled"))
+                        table.insert(details, "")
+                        table.insert(details, "Description:")
+                        table.insert(details, "  " .. mod.description)
+                        
+                        if mod.author then
+                            table.insert(details, "")
+                            table.insert(details, "Author: " .. mod.author)
+                        end
+                        
+                        return details
+                    end
+                })
+                
+                term.clear()
+                term.setCursorPos(1, 1)
                 
             elseif cmd == "enable" then
                 local moduleName = args[2]

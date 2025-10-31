@@ -119,20 +119,77 @@ function CardCommand.create(tac)
                 end
                 
             elseif cmdName == "list" then
+                local interactiveList = require("tac.lib.interactive_list")
                 local allCards = tac.cards.getAll()
-                term.setCursorPos(1,1)
-                term.clear()
-                print(string.format("%-10s %-15s %-30s", "ID", "Name", "Tags"))
-                print(string.rep("-", 60))
+                
+                -- Convert cards to list format
+                local cardItems = {}
                 for cardID, data in pairs(allCards) do
-                    print(string.format("%-10s %-15s %-30s", 
-                        SecurityCore.truncateCardId(cardID), 
-                        data.name or "Unknown", 
-                        table.concat(data.tags or {}, ", ")))
+                    table.insert(cardItems, {
+                        id = cardID,
+                        name = data.name or "Unknown",
+                        tags = data.tags or {},
+                        expiration = data.expiration,
+                        username = data.username,
+                        createdBy = data.createdBy,
+                        createdAt = data.createdAt,
+                        metadata = data.metadata
+                    })
                 end
-                print("\nPress any key to continue")
-                os.pullEvent("key")
-                sleep()
+                
+                -- Sort by name
+                table.sort(cardItems, function(a, b) return a.name < b.name end)
+                
+                if #cardItems == 0 then
+                    d.mess("No cards registered.")
+                    return
+                end
+                
+                -- Show interactive list
+                interactiveList.show({
+                    title = "Registered Cards",
+                    items = cardItems,
+                    formatItem = function(card)
+                        return card.name .. " (" .. SecurityCore.truncateCardId(card.id) .. ")"
+                    end,
+                    formatDetails = function(card)
+                        local details = {}
+                        table.insert(details, "Name: " .. card.name)
+                        table.insert(details, "ID: " .. SecurityCore.truncateCardId(card.id))
+                        table.insert(details, "")
+                        table.insert(details, "Tags: " .. table.concat(card.tags, ", "))
+                        
+                        if card.expiration then
+                            local now = os.epoch("utc")
+                            local expired = card.expiration < now
+                            local timeLeft = card.expiration - now
+                            local daysLeft = math.floor(timeLeft / (24 * 60 * 60 * 1000))
+                            
+                            table.insert(details, "")
+                            if expired then
+                                table.insert(details, "Status: EXPIRED")
+                                table.insert(details, "Expired: " .. math.abs(daysLeft) .. " days ago")
+                            else
+                                table.insert(details, "Status: Active")
+                                table.insert(details, "Expires in: " .. daysLeft .. " days")
+                            end
+                        end
+                        
+                        if card.username then
+                            table.insert(details, "")
+                            table.insert(details, "Username: " .. card.username)
+                        end
+                        
+                        if card.createdBy then
+                            table.insert(details, "Created by: " .. card.createdBy)
+                        end
+                        
+                        return details
+                    end
+                })
+                
+                term.clear()
+                term.setCursorPos(1, 1)
                 
             elseif cmdName == "edit" then
                 local cardName = table.concat(args, " ", 2)
