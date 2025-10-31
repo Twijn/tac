@@ -8,13 +8,13 @@
     
     @module updater
     @author Twijn
-    @version 1.1.5
+    @version 1.2.0
     @license MIT
 ]]
 
 local UpdaterExtension = {
     name = "updater",
-    version = "1.1.5",
+    version = "1.2.0",
     description = "Auto-update TAC core, extensions, and libraries",
     author = "Twijn",
     dependencies = {},
@@ -24,8 +24,64 @@ local UpdaterExtension = {
 -- Configuration
 local API_BASE = "https://tac.twijn.dev/api"
 local GITHUB_RAW = "https://raw.githubusercontent.com/Twijn/tac/main"
+local FILE_HASHES_PATH = "data/file_hashes.json"
 
 -- Helper functions
+local function calculateFileHash(path)
+    -- Simple hash function for file content
+    if not fs.exists(path) then return nil end
+    local file = fs.open(path, "r")
+    if not file then return nil end
+    local content = file.readAll()
+    file.close()
+    
+    -- Simple checksum (good enough for change detection)
+    local hash = 0
+    for i = 1, #content do
+        hash = (hash * 31 + string.byte(content, i)) % 2147483647
+    end
+    return tostring(hash)
+end
+
+local function loadFileHashes()
+    if not fs.exists(FILE_HASHES_PATH) then
+        return {}
+    end
+    local file = fs.open(FILE_HASHES_PATH, "r")
+    if not file then return {} end
+    local content = file.readAll()
+    file.close()
+    return textutils.unserializeJSON(content) or {}
+end
+
+local function saveFileHashes(hashes)
+    local dir = fs.getDir(FILE_HASHES_PATH)
+    if not fs.exists(dir) then
+        fs.makeDir(dir)
+    end
+    local file = fs.open(FILE_HASHES_PATH, "w")
+    if not file then return false end
+    file.write(textutils.serializeJSON(hashes))
+    file.close()
+    return true
+end
+
+local function isFileModified(path)
+    local hashes = loadFileHashes()
+    if not hashes[path] then
+        -- File not tracked, consider it unmodified
+        return false
+    end
+    local currentHash = calculateFileHash(path)
+    return currentHash ~= hashes[path]
+end
+
+local function trackFile(path)
+    local hashes = loadFileHashes()
+    hashes[path] = calculateFileHash(path)
+    saveFileHashes(hashes)
+end
+
 local function fetchJSON(url)
     local response = http.get(url)
     if not response then
@@ -36,7 +92,12 @@ local function fetchJSON(url)
     return textutils.unserializeJSON(content)
 end
 
-local function downloadFile(url, path)
+local function downloadFile(url, path, skipModifiedCheck)
+    -- Check if file was user-modified (unless override is set)
+    if not skipModifiedCheck and isFileModified(path) then
+        return false, "File modified by user (use --force to override)"
+    end
+    
     local response = http.get(url)
     if not response then
         return false, "Failed to download: " .. url
@@ -57,6 +118,10 @@ local function downloadFile(url, path)
     
     file.write(content)
     file.close()
+    
+    -- Track the file hash after successful download
+    trackFile(path)
+    
     return true
 end
 
@@ -82,6 +147,22 @@ local function compareVersions(v1, v2)
     end
     
     return false
+end
+
+local function safeDownloadFile(url, path, forceUpdate, d)
+    local success, downloadErr = downloadFile(url, path, forceUpdate)
+    if success then
+        d.mess("Updated: " .. path)
+        return true
+    else
+        if downloadErr and downloadErr:find("modified by user") then
+            d.mess("Skipped (modified): " .. path)
+            return nil  -- nil = skipped, not error
+        else
+            d.err("Failed: " .. path .. " - " .. tostring(downloadErr))
+            return false
+        end
+    end
 end
 
 --- Initialize the updater extension
@@ -166,6 +247,16 @@ function UpdaterExtension.init(tac)
         --   - err(string): Display an error message
         execute = function(args, d)
             local cmd = (args[1] or "check"):lower()
+            
+            -- Check for --force flag
+            local forceUpdate = false
+            for i, arg in ipairs(args) do
+                if arg == "--force" then
+                    forceUpdate = true
+                    table.remove(args, i)
+                    break
+                end
+            end
             
             if cmd == "check" then
                 d.mess("Checking for updates...")
@@ -258,35 +349,29 @@ function UpdaterExtension.init(tac)
                     
                     -- Update main init.lua if version is newer
                     if versions.tac.init and compareVersions(tac.version, versions.tac.version) then
-                        local success, downloadErr = downloadFile(versions.tac.init.download_url, versions.tac.init.path)
+                        local success, downloadErr = downloadFile(versions.tac.init.download_url, versions.tac.init.path, forceUpdate)
                         if success then
                             d.mess("Updated: " .. versions.tac.init.path)
                             coreUpdateCount = coreUpdateCount + 1
                         else
-                            d.err("Failed to update " .. versions.tac.init.path .. ": " .. tostring(downloadErr))
+                            if downloadErr and downloadErr:find("modified by user") then
+                                d.mess("Skipped (modified): " .. versions.tac.init.path)
+                            else
+                                d.err("Failed to update " .. versions.tac.init.path .. ": " .. tostring(downloadErr))
+                            end
                         end
                     end
                     
                     -- Update core modules (always update these with core)
                     if coreUpdateCount > 0 then
                         for name, info in pairs(versions.tac.core) do
-                            local success, downloadErr = downloadFile(info.download_url, info.path)
-                            if success then
-                                d.mess("Updated: " .. info.path)
-                            else
-                                d.err("Failed to update " .. info.path .. ": " .. tostring(downloadErr))
-                            end
+                            safeDownloadFile(info.download_url, info.path, forceUpdate, d)
                         end
                         
                         -- Update command modules (always update these with core)
                         if versions.tac.commands then
                             for name, info in pairs(versions.tac.commands) do
-                                local success, downloadErr = downloadFile(info.download_url, info.path)
-                                if success then
-                                    d.mess("Updated: " .. info.path)
-                                else
-                                    d.err("Failed to update " .. info.path .. ": " .. tostring(downloadErr))
-                                end
+                                safeDownloadFile(info.download_url, info.path, forceUpdate, d)
                             end
                         end
                     else
@@ -306,22 +391,12 @@ function UpdaterExtension.init(tac)
                                 local manifest, manifestErr = fetchJSON(API_BASE .. "/" .. extName .. ".json")
                                 if manifest then
                                     -- Update main file
-                                    local success = downloadFile(manifest.download_url, manifest.main_file)
-                                    if success then
-                                        d.mess("Updated: " .. manifest.main_file)
-                                    else
-                                        d.err("Failed: " .. manifest.main_file)
-                                    end
+                                    safeDownloadFile(manifest.download_url, manifest.main_file, forceUpdate, d)
                                     
                                     -- Update submodules
                                     if manifest.submodules then
                                         for _, submodule in ipairs(manifest.submodules) do
-                                            local success, downloadErr = downloadFile(submodule.download_url, submodule.path)
-                                            if success then
-                                                d.mess("Updated: " .. submodule.path)
-                                            else
-                                                d.err("Failed: " .. submodule.path)
-                                            end
+                                            safeDownloadFile(submodule.download_url, submodule.path, forceUpdate, d)
                                         end
                                     end
                                 else
@@ -355,33 +430,18 @@ function UpdaterExtension.init(tac)
                 
                 -- Update main init.lua
                 if versions.tac.init then
-                    local success, downloadErr = downloadFile(versions.tac.init.download_url, versions.tac.init.path)
-                    if success then
-                        d.mess("Updated: " .. versions.tac.init.path)
-                    else
-                        d.err("Failed: " .. versions.tac.init.path)
-                    end
+                    safeDownloadFile(versions.tac.init.download_url, versions.tac.init.path, forceUpdate, d)
                 end
                 
                 -- Update core modules
                 for name, info in pairs(versions.tac.core) do
-                    local success, downloadErr = downloadFile(info.download_url, info.path)
-                    if success then
-                        d.mess("Updated: " .. info.path)
-                    else
-                        d.err("Failed: " .. info.path)
-                    end
+                    safeDownloadFile(info.download_url, info.path, forceUpdate, d)
                 end
                 
                 -- Update command modules
                 if versions.tac.commands then
                     for name, info in pairs(versions.tac.commands) do
-                        local success, downloadErr = downloadFile(info.download_url, info.path)
-                        if success then
-                            d.mess("Updated: " .. info.path)
-                        else
-                            d.err("Failed: " .. info.path)
-                        end
+                        safeDownloadFile(info.download_url, info.path, forceUpdate, d)
                     end
                 end
                 
@@ -402,27 +462,32 @@ function UpdaterExtension.init(tac)
                 end
                 
                 -- Update main file
-                local success = downloadFile(manifest.download_url, manifest.main_file)
-                if success then
-                    d.mess("Updated: " .. manifest.main_file)
-                end
+                safeDownloadFile(manifest.download_url, manifest.main_file, forceUpdate, d)
                 
                 -- Update submodules
                 if manifest.submodules then
                     for _, submodule in ipairs(manifest.submodules) do
-                        local success, downloadErr = downloadFile(submodule.download_url, submodule.path)
-                        if success then
-                            d.mess("Updated: " .. submodule.path)
-                        else
-                            d.err("Failed: " .. submodule.path)
-                        end
+                        safeDownloadFile(submodule.download_url, submodule.path, forceUpdate, d)
                     end
                 end
                 
                 d.mess("Extension updated! Restart to apply changes.")
                 
+            elseif cmd == "help" then
+                d.mess("TAC Updater Commands:")
+                d.mess("  check              - Check for available updates")
+                d.mess("  update             - Update all components")
+                d.mess("  update-libs        - Update only libraries")
+                d.mess("  update-core        - Update only TAC core")
+                d.mess("  update-extension <name> - Update specific extension")
+                d.mess("")
+                d.mess("Options:")
+                d.mess("  --force            - Force update even if files are modified")
+                d.mess("")
+                d.mess("Note: Modified files are skipped by default to preserve changes.")
+                d.mess("Use --force to override this protection.")
             else
-                d.err("Unknown command! Use: check, update, update-libs, update-core, update-extension")
+                d.err("Unknown command! Use: check, update, update-libs, update-core, update-extension, help")
             end
         end
     })
