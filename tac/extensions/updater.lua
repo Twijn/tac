@@ -8,13 +8,13 @@
     
     @module updater
     @author Twijn
-    @version 1.1.3
+    @version 1.1.4
     @license MIT
 ]]
 
 local UpdaterExtension = {
     name = "updater",
-    version = "1.1.3",
+    version = "1.1.4",
     description = "Auto-update TAC core, extensions, and libraries",
     author = "Twijn",
     dependencies = {},
@@ -282,6 +282,38 @@ function UpdaterExtension.init(tac)
                                 d.mess("Updated: " .. info.path)
                             else
                                 d.err("Failed to update " .. info.path .. ": " .. tostring(downloadErr))
+                            end
+                        end
+                    end
+                    
+                    -- Update extensions
+                    d.mess("Updating extensions...")
+                    for extName, extData in pairs(tac.extensions) do
+                        if versions.tac.extensions[extName] then
+                            d.mess("Updating extension: " .. extName)
+                            local manifest, manifestErr = fetchJSON(API_BASE .. "/" .. extName .. ".json")
+                            if manifest then
+                                -- Update main file
+                                local success = downloadFile(manifest.download_url, manifest.main_file)
+                                if success then
+                                    d.mess("Updated: " .. manifest.main_file)
+                                else
+                                    d.err("Failed: " .. manifest.main_file)
+                                end
+                                
+                                -- Update submodules
+                                if manifest.submodules then
+                                    for _, submodule in ipairs(manifest.submodules) do
+                                        local success, downloadErr = downloadFile(submodule.download_url, submodule.path)
+                                        if success then
+                                            d.mess("Updated: " .. submodule.path)
+                                        else
+                                            d.err("Failed: " .. submodule.path)
+                                        end
+                                    end
+                                end
+                            else
+                                d.err("Failed to fetch manifest for " .. extName .. ": " .. tostring(manifestErr))
                             end
                         end
                     end
