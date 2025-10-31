@@ -8,13 +8,13 @@
     
     @module updater
     @author Twijn
-    @version 1.1.1
+    @version 1.1.2
     @license MIT
 ]]
 
 local UpdaterExtension = {
     name = "updater",
-    version = "1.1.1",
+    version = "1.1.2",
     description = "Auto-update TAC core, extensions, and libraries",
     author = "Twijn",
     dependencies = {},
@@ -254,6 +254,17 @@ function UpdaterExtension.init(tac)
                 d.mess("Updating TAC core...")
                 local versions, err = fetchJSON(API_BASE .. "/versions.json")
                 if versions then
+                    -- Update main init.lua
+                    if versions.tac.init then
+                        local success, downloadErr = downloadFile(versions.tac.init.download_url, versions.tac.init.path)
+                        if success then
+                            d.mess("Updated: " .. versions.tac.init.path)
+                        else
+                            d.err("Failed to update " .. versions.tac.init.path .. ": " .. tostring(downloadErr))
+                        end
+                    end
+                    
+                    -- Update core modules
                     for name, info in pairs(versions.tac.core) do
                         local success, downloadErr = downloadFile(info.download_url, info.path)
                         if success then
@@ -285,10 +296,14 @@ function UpdaterExtension.init(tac)
                     return
                 end
                 
-                -- Update init.lua
-                local success = downloadFile(GITHUB_RAW .. "/tac/init.lua", "tac/init.lua")
-                if success then
-                    d.mess("Updated tac/init.lua")
+                -- Update main init.lua
+                if versions.tac.init then
+                    local success, downloadErr = downloadFile(versions.tac.init.download_url, versions.tac.init.path)
+                    if success then
+                        d.mess("Updated: " .. versions.tac.init.path)
+                    else
+                        d.err("Failed: " .. versions.tac.init.path)
+                    end
                 end
                 
                 -- Update core modules

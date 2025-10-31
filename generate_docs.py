@@ -603,6 +603,11 @@ class TACDocGenerator:
         versions = {
             'tac': {
                 'version': tac_version or '0.0.0',
+                'init': {
+                    'version': tac_version or '0.0.0',
+                    'path': 'tac/init.lua',
+                    'download_url': 'https://raw.githubusercontent.com/Twijn/tac/main/tac/init.lua'
+                },
                 'core': {},
                 'extensions': {}
             }
