@@ -1,6 +1,6 @@
 {
   "name": "shop_monitor",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Displays available shop items on a monitor with payment commands. Shows access tiers, pricing, and renewal information on an external monitor. Optionally integrates with shopk_access extension for enhanced functionality.",
   "author": "Twijn",
   "main_file": "tac/extensions/shop_monitor.lua",
