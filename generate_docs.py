@@ -585,6 +585,7 @@ class TACDocGenerator:
     def generate_api_endpoints(self):
         """Generate JSON API endpoints for version checking and updates"""
         import json
+        import glob
         
         # Create API directory
         api_dir = self.output_dir / 'api'
@@ -609,6 +610,7 @@ class TACDocGenerator:
                     'download_url': 'https://raw.githubusercontent.com/Twijn/tac/main/tac/init.lua'
                 },
                 'core': {},
+                'commands': {},
                 'extensions': {}
             }
         }
@@ -622,6 +624,13 @@ class TACDocGenerator:
                     'path': m['path'],
                     'download_url': f"https://raw.githubusercontent.com/Twijn/tac/main/{m['path']}"
                 }
+            elif m['path'].startswith('tac/commands/'):
+                module_name = m['name'].replace('tac.commands.', '')
+                versions['tac']['commands'][module_name] = {
+                    'version': m.get('version', '0.0.0'),
+                    'path': m['path'],
+                    'download_url': f"https://raw.githubusercontent.com/Twijn/tac/main/{m['path']}"
+                }
             elif m['path'].startswith('tac/extensions/'):
                 # Only include top-level extensions (not submodules)
                 if '/' not in m['path'][15:]:
@@ -630,6 +639,18 @@ class TACDocGenerator:
                         'version': m.get('version', '0.0.0'),
                         'path': m['path'],
                         'download_url': f"https://raw.githubusercontent.com/Twijn/tac/main/{m['path']}"
+                    }
+        
+        # Also scan tac/commands directory directly for any files not in parsed modules
+        commands_dir = self.input_dir / 'tac' / 'commands'
+        if commands_dir.exists():
+            for cmd_file in commands_dir.glob('*.lua'):
+                cmd_name = cmd_file.stem
+                if cmd_name not in versions['tac']['commands']:
+                    versions['tac']['commands'][cmd_name] = {
+                        'version': '0.0.0',
+                        'path': f'tac/commands/{cmd_file.name}',
+                        'download_url': f"https://raw.githubusercontent.com/Twijn/tac/main/tac/commands/{cmd_file.name}"
                     }
         
         # Write versions.json

@@ -8,13 +8,13 @@
     
     @module updater
     @author Twijn
-    @version 1.1.2
+    @version 1.1.3
     @license MIT
 ]]
 
 local UpdaterExtension = {
     name = "updater",
-    version = "1.1.2",
+    version = "1.1.3",
     description = "Auto-update TAC core, extensions, and libraries",
     author = "Twijn",
     dependencies = {},
@@ -273,6 +273,18 @@ function UpdaterExtension.init(tac)
                             d.err("Failed to update " .. info.path .. ": " .. tostring(downloadErr))
                         end
                     end
+                    
+                    -- Update command modules
+                    if versions.tac.commands then
+                        for name, info in pairs(versions.tac.commands) do
+                            local success, downloadErr = downloadFile(info.download_url, info.path)
+                            if success then
+                                d.mess("Updated: " .. info.path)
+                            else
+                                d.err("Failed to update " .. info.path .. ": " .. tostring(downloadErr))
+                            end
+                        end
+                    end
                 end
                 
                 d.mess("Update complete! Restart TAC to apply changes.")
@@ -313,6 +325,18 @@ function UpdaterExtension.init(tac)
                         d.mess("Updated: " .. info.path)
                     else
                         d.err("Failed: " .. info.path)
+                    end
+                end
+                
+                -- Update command modules
+                if versions.tac.commands then
+                    for name, info in pairs(versions.tac.commands) do
+                        local success, downloadErr = downloadFile(info.download_url, info.path)
+                        if success then
+                            d.mess("Updated: " .. info.path)
+                        else
+                            d.err("Failed: " .. info.path)
+                        end
                     end
                 end
                 
