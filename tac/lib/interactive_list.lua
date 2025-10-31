@@ -6,7 +6,7 @@
     
     @module tac.lib.interactive_list
     @author Twijn
-    @version 1.0.1
+    @version 1.0.2
     
     @example
     local interactiveList = require("tac.lib.interactive_list")
@@ -287,6 +287,7 @@ function interactiveList.show(options)
                 selectedItems[selectedIndex] = not selectedItems[selectedIndex]
             end
         elseif key == keys.q then
+            sleep() -- prevents key from showing in cmd
             return nil
         end
     end

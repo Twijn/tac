@@ -8,7 +8,7 @@
     
     @module tac
     @author Twijn
-    @version 1.4.2
+    @version 1.4.3
     @license MIT
     
     @example
