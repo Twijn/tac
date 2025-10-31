@@ -1,13 +1,13 @@
 -- TAC (Terminal Access Control) Installer
--- Version 1.0.0
+-- Version 1.1.0
 -- A comprehensive installer for the TAC system with module management
 
 
 -- List of all required libraries
-local libs = {"cmd", "formui", "persist", "s", "shopk", "tables"}
+local libs = {"cmd", "formui", "persist", "s", "shopk", "tables", "shopk_node"}
 
 local TAC_INSTALLER = {
-    version = "1.0.0",
+    version = "1.1.0",
     name = "TAC Installer",
     
     -- GitHub configuration
@@ -42,7 +42,8 @@ local TAC_INSTALLER = {
         "persist.lua",
         "s.lua",
         "shopk.lua",
-        "tables.lua"
+        "tables.lua",
+        "shopk_node.lua"
     },
     
     -- Available modules
