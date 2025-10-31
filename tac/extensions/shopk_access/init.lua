@@ -1,5 +1,12 @@
--- ShopK Access Extension Module Entry Point
--- This provides access to all the submodules
+--[[
+    ShopK Access Extension Module Entry Point
+    
+    Module loader that provides access to all ShopK access submodules.
+    This is used internally by the parent shopk_access.lua extension.
+    
+    @module tac.extensions.shopk_access.init
+    @author Twijn
+]]
 
 local shopk_access = {}
 

@@ -1,0 +1,36 @@
+name: Generate Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'util/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+      
+    - name: Generate Documentation
+      run: |
+        python3 generate_docs.py
+
+    - name: Add CNAME
+      run: echo 'tac.twijn.dev' > ./docs/CNAME
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs

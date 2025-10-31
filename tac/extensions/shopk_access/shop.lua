@@ -1,5 +1,12 @@
--- ShopK Access Extension - Transaction Handling
--- Handles ShopK shop instance and transaction processing
+--[[
+    ShopK Access Extension - Transaction Handling
+    
+    Handles ShopK shop instance and transaction processing. Manages the
+    ShopK integration, processes purchases, and handles payment events.
+    
+    @module tac.extensions.shopk_access.shop
+    @author Twijn
+]]
 
 local utils = require("tac.extensions.shopk_access.utils")
 local config = require("tac.extensions.shopk_access.config")

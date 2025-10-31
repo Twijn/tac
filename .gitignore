@@ -3,6 +3,7 @@
 # Runtime data and logs
 data/
 logs/
+docs/
 *.log
 debug.log
 error.log

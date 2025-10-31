@@ -1,5 +1,12 @@
--- ShopK Access Extension - Slot Management
--- Handles slot discovery, availability checking, and assignment
+--[[
+    ShopK Access Extension - Slot Management
+    
+    Handles slot discovery, availability checking, and assignment for
+    subscription-based access slots.
+    
+    @module tac.extensions.shopk_access.slots
+    @author Twijn
+]]
 
 local utils = require("tac.extensions.shopk_access.utils")
 

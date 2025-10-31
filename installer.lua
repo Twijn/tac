@@ -63,6 +63,13 @@ local TAC_INSTALLER = {
                 "tac/extensions/shopk_access/utils.lua"
             }
         },
+        shopk_node = {
+            name = "ShopK Node",
+            description = "Configure ShopK syncNode setting",
+            files = {
+                "tac/extensions/shopk_node.lua"
+            }
+        },
         shop_monitor = {
             name = "Shop Monitor",
             description = "Monitor and display shop information",

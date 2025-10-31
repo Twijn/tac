@@ -1,5 +1,12 @@
--- ShopK Access Extension - Configuration Management
--- Handles tier configuration, loading, saving
+--[[
+    ShopK Access Extension - Configuration Management
+    
+    Handles tier configuration, loading, and saving for ShopK access sales.
+    Manages subscription tier definitions, pricing, and duration settings.
+    
+    @module tac.extensions.shopk_access.config
+    @author Twijn
+]]
 
 local config = {}
 

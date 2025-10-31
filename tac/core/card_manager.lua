@@ -1,5 +1,41 @@
--- TAC Centralized Card Management
--- Provides consistent card creation, validation, and management APIs
+--[[
+    TAC Centralized Card Management
+    
+    Provides consistent card creation, validation, and management APIs.
+    Handles standard card creation, subscription cards with expiration,
+    card renewal, and card information queries.
+    
+    @module tac.core.card_manager
+    @author Twijn
+    @version 1.0.1
+    @license MIT
+    
+    @example
+    -- In your extension:
+    function MyExtension.init(tac)
+        -- Create a simple card
+        local card, err = tac.cardManager.createCard({
+            name = "John Doe",
+            tags = {"tenant.1", "vip"}
+        })
+        
+        -- Create a subscription card
+        local subCard, err = tac.cardManager.createSubscriptionCard({
+            username = "player1",
+            duration = 30,
+            slot = "tenant.premium"
+        })
+        
+        -- Renew a card
+        tac.cardManager.renewCard("tenant_1_player1", 30)
+        
+        -- Get card info
+        local info, err = tac.cardManager.getCardInfo("tenant_1_player1")
+        if info then
+            print("Card expires in " .. (info.timeUntilExpiration / 86400000) .. " days")
+        end
+    end
+]]
 
 local function create(tacInstance)
     local cardManager = {}
@@ -40,7 +76,24 @@ local function create(tacInstance)
         return true, nil
     end
 
-    -- Create a new card with standard validation and logging
+    --- Create a new card with standard validation and logging
+    --
+    -- Creates a card with the provided options, validates the data, saves it,
+    -- and logs the creation event. Auto-generates a card ID if not provided.
+    --
+    ---@param options table Card creation options:
+    --   - id (string, optional): Card ID (auto-generated if not provided)
+    --   - name (string, required): Display name for the card
+    --   - tags (table, required): Array of access tags
+    --   - expiration (number, optional): UTC epoch timestamp when card expires
+    --   - username (string, optional): Username associated with card (used in ID generation)
+    --   - prefix (string, optional): Prefix for auto-generated ID
+    --   - createdBy (string, optional): Who/what created the card (default: "system")
+    --   - metadata (table, optional): Additional custom data
+    --   - logMessage (string, optional): Custom log message
+    ---@return table|nil Card data object if successful, nil on error
+    ---@return string|nil Error message if creation failed
+    ---@usage local card, err = cardManager.createCard({name = "John Doe", tags = {"tenant.1"}})
     function cardManager.createCard(options)
         local opts = options or {}
         
@@ -77,7 +130,22 @@ local function create(tacInstance)
         return cardData, nil
     end
 
-    -- Create a subscription card (with expiration)
+    --- Create a subscription card (with expiration)
+    --
+    -- Specialized function for creating time-limited subscription cards.
+    -- Commonly used by ShopK integration for selling temporary access.
+    --
+    ---@param options table Subscription card options:
+    --   - username (string, required): Username of the subscriber
+    --   - duration (number, required): Subscription duration in days
+    --   - slot (string, required): Access level/slot (becomes the card tag)
+    --   - createdBy (string, optional): Creator identifier (default: "shopk")
+    --   - purchaseValue (number, optional): Purchase price for metadata
+    --   - transactionId (string, optional): Transaction ID for metadata
+    --   - logMessage (string, optional): Custom log message
+    ---@return table|nil Card data object if successful, nil on error
+    ---@return string|nil Error message if creation failed
+    ---@usage local card, err = cardManager.createSubscriptionCard({username = "player1", duration = 30, slot = "tenant.1"})
     function cardManager.createSubscriptionCard(options)
         local opts = options or {}
         
@@ -121,7 +189,20 @@ local function create(tacInstance)
         return cardManager.createCard(cardOptions)
     end
 
-    -- Renew an existing card
+    --- Renew an existing card
+    --
+    -- Extends the expiration date of an existing card by the specified duration.
+    -- Updates renewal metadata and logs the renewal event.
+    --
+    ---@param cardId string ID of the card to renew
+    ---@param additionalDuration number Days to add to current expiration
+    ---@param options table Optional renewal options:
+    --   - renewedBy (string, optional): Who renewed the card (default: "system")
+    --   - transactionId (string, optional): Transaction ID for metadata
+    --   - logMessage (string, optional): Custom log message
+    ---@return table|nil Updated card data if successful, nil on error
+    ---@return string|nil Error message if renewal failed
+    ---@usage local card, err = cardManager.renewCard("tenant_1_player1", 30, {renewedBy = "admin"})
     function cardManager.renewCard(cardId, additionalDuration, options)
         local opts = options or {}
         
@@ -164,7 +245,24 @@ local function create(tacInstance)
         return existingCard, nil
     end
 
-    -- Get card status and info
+    --- Get card status and info
+    --
+    -- Retrieves comprehensive information about a card including expiration status.
+    -- Returns structured data with calculated fields like isExpired and timeUntilExpiration.
+    --
+    ---@param cardId string ID of the card to query
+    ---@return table|nil Card info object with fields:
+    --   - id (string): Card ID
+    --   - name (string): Card display name
+    --   - tags (table): Access tags array
+    --   - created (number): Creation timestamp
+    --   - createdBy (string): Creator identifier
+    --   - isExpired (boolean): Whether card is currently expired
+    --   - timeUntilExpiration (number|nil): Milliseconds until expiration (nil if no expiration)
+    --   - expiration (number|nil): Expiration timestamp if set
+    --   - metadata (table): Custom metadata
+    ---@return string|nil Error message if card not found
+    ---@usage local info, err = cardManager.getCardInfo("tenant_1_player1")
     function cardManager.getCardInfo(cardId)
         local card = tac.cards.get(cardId)
         if not card then
@@ -192,7 +290,13 @@ local function create(tacInstance)
         return info, nil
     end
 
-    -- Validate card ID format
+    --- Validate card ID format
+    --
+    -- Checks if a card ID meets basic format requirements (non-empty string).
+    --
+    ---@param cardId any Value to validate as a card ID
+    ---@return boolean True if valid card ID format
+    ---@usage if cardManager.isValidCardId(scannedId) then ... end
     function cardManager.isValidCardId(cardId)
         return cardId and type(cardId) == "string" and #cardId > 0
     end

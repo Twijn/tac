@@ -1,5 +1,12 @@
--- ShopK Access Extension - Command Handlers
--- Command implementations for shop management
+--[[
+    ShopK Access Extension - Command Handlers
+    
+    Command implementations for shop management. Handles all CLI commands
+    for configuring and managing the ShopK integration.
+    
+    @module tac.extensions.shopk_access.commands
+    @author Twijn
+]]
 
 local config = require("tac.extensions.shopk_access.config")
 local slots = require("tac.extensions.shopk_access.slots")

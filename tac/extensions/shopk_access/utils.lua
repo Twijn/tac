@@ -1,5 +1,12 @@
--- ShopK Access Extension - Utility Functions
--- Core utilities for time, formatting, and basic functions
+--[[
+    ShopK Access Extension - Utility Functions
+    
+    Core utilities for time, formatting, and basic helper functions
+    used throughout the ShopK access extension.
+    
+    @module tac.extensions.shopk_access.utils
+    @author Twijn
+]]
 
 local utils = {}
 

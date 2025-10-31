@@ -1,5 +1,12 @@
--- ShopK Access Extension - User Interface
--- FormUI-based configuration interfaces
+--[[
+    ShopK Access Extension - User Interface
+    
+    FormUI-based configuration interfaces for ShopK access management.
+    Provides interactive forms for configuring tiers and settings.
+    
+    @module tac.extensions.shopk_access.ui
+    @author Twijn
+]]
 
 local FormUI = require("formui")
 local config = require("tac.extensions.shopk_access.config")

@@ -1,8 +1,54 @@
--- TAC (Terminal Access Control) Core Module
--- Main package interface for the access control system
+--[[
+    TAC (Terminal Access Control) Core Module
+    
+    The main package interface for the TAC access control system. This module
+    provides the core functionality for managing card-based access control,
+    including extension management, command registration, hooks, and background
+    process management.
+    
+    @module tac
+    @author Twijn
+    @version 1.2.1
+    @license MIT
+    
+    @example
+    -- Basic TAC usage:
+    local TAC = require("tac")
+    
+    -- Initialize TAC
+    local tac = TAC.new({
+        autoload_extensions = true,
+        extension_dir = "tac/extensions"
+    })
+    
+    -- Start the system
+    tac.run()
+    
+    @example
+    -- Create a custom extension:
+    local MyExtension = {
+        name = "my_extension",
+        version = "1.0.0",
+        description = "My custom extension"
+    }
+    
+    function MyExtension.init(tac)
+        -- Access TAC functionality
+        local cards = tac.cards.getAll()
+        tac.logger.logAccess({...})
+        
+        -- Load other extensions
+        local shopk = tac.require("shopk_access")
+        
+        -- Register commands
+        tac.registerCommand("mycommand", {...})
+    end
+    
+    return MyExtension
+]]
 
 local TAC = {
-    version = "1.2.0",
+    version = "1.2.1",
     name = "tAC"
 }
 
@@ -10,14 +56,20 @@ local TAC = {
 TAC.Security = require("tac.core.security")
 TAC.Logger = require("tac.core.logger")
 TAC.Hardware = require("tac.core.hardware")
+TAC.ExtensionLoader = require("tac.core.extension_loader")
 
 -- Extension registry
 TAC.extensions = {}
 TAC.commands = {}
 
 --- Initialize TAC with configuration
--- @param config table - configuration options
--- @return table - TAC instance
+--
+-- Creates a new TAC instance with the provided configuration. This is the main
+-- entry point for setting up the access control system.
+--
+-- @param config table Optional configuration options
+-- @return table A new TAC instance with methods for extension/command registration
+-- @usage local tac = TAC.new({})
 function TAC.new(config)
     config = config or {}
     
@@ -55,6 +107,9 @@ function TAC.new(config)
     local CardManager = require("tac.core.card_manager")
     instance.cardManager = CardManager.create(instance)
     
+    -- Initialize extension loader
+    instance.extensionLoader = TAC.ExtensionLoader.create(instance)
+    
     -- Initialize server NFC reader if not configured
     if not instance.settings.get("server-nfc-reader") then
         local nfcReaders = TAC.Hardware.findPeripheralsOfType("nfc_reader")
@@ -68,8 +123,14 @@ function TAC.new(config)
     math.randomseed(os.epoch("utc"))
     
     --- Register an extension
-    -- @param name string - extension name
-    -- @param extension table - extension module
+    --
+    -- Registers a TAC extension module. If the extension has an init function,
+    -- it will be called immediately with the TAC instance. Extensions can register
+    -- commands, hooks, and background processes.
+    --
+    -- @param name string The unique name identifier for the extension
+    -- @param extension table The extension module (must have .init(tac) method)
+    -- @usage tac.registerExtension("myextension", MyExtension)
     function instance.registerExtension(name, extension)
         instance.extensions[name] = extension
         if extension.init then
@@ -78,15 +139,35 @@ function TAC.new(config)
     end
     
     --- Register a command
-    -- @param name string - command name
-    -- @param commandDef table - command definition with description, complete, execute
+    --
+    -- Registers a new command that can be executed from the TAC command prompt.
+    -- Commands can include autocompletion and help text.
+    --
+    -- @param name string The command name (what users type)
+    -- @param commandDef table Command definition with fields:
+    --   - description (string): Brief description of the command
+    --   - complete (function): Autocomplete function(args) -> suggestions
+    --   - execute (function): Execution function(args, d) where d has .mess() and .err()
+    -- @usage tac.registerCommand("mycommand", {description="...", execute=function(args, d) ... end})
     function instance.registerCommand(name, commandDef)
         instance.commands[name] = commandDef
     end
     
     --- Add a hook
-    -- @param hookName string - name of hook (beforeAccess, afterAccess, etc.)
-    -- @param callback function - callback function
+    --
+    -- Registers a callback function for a specific hook point in TAC's execution.
+    -- Multiple callbacks can be registered for the same hook.
+    --
+    -- Available hooks:
+    -- - beforeAccess: Called before access check (card, door, data, side)
+    -- - afterAccess: Called after access check (granted, matchReason, card, door)
+    -- - beforeCommand: Called before command execution (commandName, args)
+    -- - afterCommand: Called after command execution (commandName, args, success)
+    -- - beforeShutdown: Called before TAC shuts down ()
+    --
+    -- @param hookName string Name of the hook point
+    -- @param callback function The callback function to invoke
+    -- @usage tac.addHook("afterAccess", function(granted, reason, card, door) ... end)
     function instance.addHook(hookName, callback)
         if instance.hooks[hookName] then
             table.insert(instance.hooks[hookName], callback)
@@ -94,8 +175,14 @@ function TAC.new(config)
     end
     
     --- Register a background process
-    -- @param name string - process name
-    -- @param processFunction function - function to run in parallel
+    --
+    -- Registers a function to run in parallel with the main TAC event loop.
+    -- Background processes are useful for monitoring, periodic tasks, or
+    -- maintaining connections to external services.
+    --
+    -- @param name string Unique identifier for the process
+    -- @param processFunction function The function to run in parallel
+    -- @usage tac.registerBackgroundProcess("monitor", function() while true do ... end end)
     function instance.registerBackgroundProcess(name, processFunction)
         instance.backgroundProcesses[name] = processFunction
         instance.processStatus[name] = {
@@ -107,7 +194,13 @@ function TAC.new(config)
     end
     
     --- Disable a background process
-    -- @param name string - process name
+    --
+    -- Marks a registered background process as disabled, preventing it from running.
+    -- The process will not be started until re-enabled.
+    --
+    ---@param name string Unique identifier of the background process
+    ---@return boolean True if process was disabled, false if process not found
+    ---@usage tac.disableBackgroundProcess("monitor")
     function instance.disableBackgroundProcess(name)
         if instance.backgroundProcesses[name] then
             instance.disabledProcesses[name] = true
@@ -120,7 +213,12 @@ function TAC.new(config)
     end
     
     --- Enable a background process
-    -- @param name string - process name
+    --
+    -- Re-enables a previously disabled background process, allowing it to run.
+    --
+    ---@param name string Unique identifier of the background process
+    ---@return boolean True if process was enabled, false if process not found
+    ---@usage tac.enableBackgroundProcess("monitor")
     function instance.enableBackgroundProcess(name)
         if instance.backgroundProcesses[name] then
             instance.disabledProcesses[name] = nil
@@ -133,8 +231,16 @@ function TAC.new(config)
     end
     
     --- Get process status
-    -- @param name string - process name (optional, returns all if nil)
-    -- @return table - status information
+    --
+    -- Returns status information for a specific background process or all processes.
+    --
+    ---@param name string|nil Optional process name (returns all processes if nil)
+    ---@return table Status information with fields:
+    --   - status (string): Current status ("registered", "running", "disabled", etc.)
+    --   - startTime (number|nil): When process started
+    --   - lastError (string|nil): Last error message if failed
+    --   - restartCount (number): Number of times process has restarted
+    ---@usage local status = tac.getProcessStatus("monitor")
     function instance.getProcessStatus(name)
         if name then
             return instance.processStatus[name]
@@ -144,9 +250,14 @@ function TAC.new(config)
     end
     
     --- Execute hooks
-    -- @param hookName string - name of hook
-    -- @param ... any - arguments to pass to hook callbacks
-    -- @return boolean - false if any hook returns false (denies action), true otherwise
+    --
+    -- Triggers all registered callbacks for a specific hook point.
+    -- If any callback returns false, the hook execution stops and returns false.
+    --
+    ---@param hookName string Name of the hook to execute
+    ---@param ... any Arguments to pass to all hook callbacks
+    ---@return boolean False if any hook returned false (action denied), true otherwise
+    ---@usage local allowed = tac.executeHooks("beforeAccess", card, door, data, side)
     function instance.executeHooks(hookName, ...)
         if instance.hooks[hookName] then
             for _, callback in ipairs(instance.hooks[hookName]) do
@@ -164,14 +275,33 @@ function TAC.new(config)
     instance.extensionSettings = {}
     
     --- Register extension settings requirements
-    -- @param extensionName string - name of extension
-    -- @param settingsConfig table - settings configuration
+    --
+    -- Declares settings that an extension requires. TAC will prompt for missing
+    -- settings when the extension is loaded.
+    --
+    ---@param extensionName string Name of the extension
+    ---@param settingsConfig table Configuration with fields:
+    --   - title (string, optional): Form title for settings prompt
+    --   - required (table): Array of setting definitions, each with:
+    --     - key (string): Settings key to store value
+    --     - label (string): Display label in form
+    --     - type (string): "text", "number", "select", or "peripheral"
+    --     - default (any, optional): Default value
+    --     - validate (function, optional): Validation function
+    --     - options (table, for "select"): Array of options
+    --     - filter (string, for "peripheral"): Peripheral type filter
+    ---@usage tac.registerExtensionSettings("myext", {required = {{key = "my_setting", label = "My Setting", type = "text"}}})
     function instance.registerExtensionSettings(extensionName, settingsConfig)
         instance.extensionSettings[extensionName] = settingsConfig
     end
     
     --- Check for missing extension settings and prompt if needed
-    -- @param d table - display interface (optional)
+    --
+    -- Validates that all required extension settings are configured.
+    -- If any are missing, prompts the user with a form to enter them.
+    --
+    ---@param d table Optional display interface (uses instance.d if not provided)
+    ---@usage tac.checkExtensionSettings()
     function instance.checkExtensionSettings(d)
         d = d or instance.d
         
@@ -237,13 +367,34 @@ function TAC.new(config)
     end
     
     --- Get server NFC reader peripheral
-    -- @return table|nil - server NFC peripheral or nil if not found
+    --
+    -- Returns the configured server NFC reader peripheral.
+    --
+    ---@return table|nil Server NFC reader peripheral, or nil if not configured
+    ---@usage local nfc = tac.getServerNfc()
     function instance.getServerNfc()
         local serverNfcName = instance.settings.get("server-nfc-reader")
         if serverNfcName then
             return peripheral.wrap(serverNfcName)
         end
         return nil
+    end
+    
+    --- Require an extension
+    --
+    -- Safely loads and returns an extension by name. Returns the extension's
+    -- exported API or nil if not loaded.
+    --
+    ---@param extensionName string Name of the extension to require
+    ---@return table|nil Extension API object if loaded, nil if not available
+    ---@return string|nil Error message if extension not available
+    ---@usage local shopk, err = tac.require("shopk_access")
+    function instance.require(extensionName)
+        if instance.extensions[extensionName] then
+            return instance.extensions[extensionName], nil
+        else
+            return nil, "Extension '" .. extensionName .. "' is not loaded"
+        end
     end
     
     --- Main access control loop
@@ -540,31 +691,24 @@ function TAC.new(config)
 end
 
 --- Load extensions from extensions directory
-function TAC.loadExtensions(instance)
-    local extensionDir = "tac/extensions"
-    
-    -- Try to iterate through extension files
-    -- Note: In CC:Tweaked, we need to use fs.list() to discover files
-    local success, files = pcall(fs.list, "tac/extensions")
-
-    if not success then
-        return
+--- Load extensions from directory
+--
+-- Discovers and loads all extensions using the extension loader system.
+-- Handles dependencies, errors gracefully, and provides detailed feedback.
+--
+---@param instance table The TAC instance
+---@param options table Optional configuration (passed to extensionLoader.loadFromDirectory)
+---@return table Results with loaded, failed, and skipped extensions
+---@usage local results = TAC.loadExtensions(tac, {silent = false})
+function TAC.loadExtensions(instance, options)
+    if not instance.extensionLoader then
+        term.setTextColor(colors.red)
+        print("Extension loader not initialized")
+        term.setTextColor(colors.white)
+        return {loaded = {}, failed = {}, skipped = {}}
     end
     
-    for _, filename in ipairs(files) do
-        -- Only load .lua files and skip directories
-        if filename:match("%.lua$") and not fs.isDir("tac/extensions/" .. filename) then
-            local extName = filename:gsub("%.lua$", "")  -- Remove .lua extension
-            
-            -- Skip disabled extensions (prefixed with _ or disabled_)
-            if not extName:match("^_") and not extName:match("^disabled_") then
-                local loadSuccess, extension = pcall(require, extensionDir .. "." .. extName)
-                if loadSuccess then
-                    instance.registerExtension(extName, extension)
-                end
-            end
-        end
-    end
+    return instance.extensionLoader.loadFromDirectory(options)
 end
 
 return TAC

@@ -1,11 +1,41 @@
--- TAC ShopK Access Extension
--- Sells access tags as SKUs via ShopK/Kromer payments
--- Modular version using separate modules for different functionality
+--[[
+    TAC ShopK Access Extension
+    
+    Sells access tags as SKUs via ShopK/Kromer payments. Integrates with ShopK
+    to allow users to purchase access tags through the Kromer payment system.
+    Modular version using separate modules for different functionality.
+    
+    @module tac.extensions.shopk_access
+    @author Twijn
+    @version 1.0.2
+    
+    @example
+    -- This extension is loaded automatically by TAC.
+    -- Once loaded, it provides ShopK integration commands:
+    
+    -- In TAC shell:
+    -- > shopk help              -- Show available commands
+    -- > shopk slot add tenant.1 Premium Access 500 30
+    -- > shopk slot list         -- List all configured slots
+    -- > shopk start             -- Start the ShopK shop
+    
+    -- From another extension:
+    function MyExtension.init(tac)
+        -- Wait for shopk_access to load, then use its functionality
+        local shopk = tac.require("shopk_access")
+        if shopk then
+            print("ShopK integration available")
+        end
+    end
+]]
 
 local ShopKAccessExtension = {
     name = "shopk_access",
-    version = "1.0.1",
-    description = "Sell access tags via ShopK/Kromer payments"
+    version = "1.0.2",
+    description = "Sell access tags via ShopK/Kromer payments",
+    author = "Twijn",
+    dependencies = {},
+    optional_dependencies = {}
 }
 
 -- Load modules

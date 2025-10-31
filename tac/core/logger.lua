@@ -1,17 +1,67 @@
--- TAC Access Logger
--- Handles all access logging functionality
+--[[
+    TAC Access Logger
+    
+    Handles all access logging functionality for the TAC system.
+    Logs access events, card creation, and other security-related activities.
+    
+    @module tac.core.logger
+    @author Twijn
+    @version 1.0.1
+    
+    @example
+    -- In your extension:
+    function MyExtension.init(tac)
+        -- Log an access event
+        tac.logger.logAccess({
+            cardId = "tenant_1_player1",
+            cardName = "Player One",
+            doorId = "main_entrance",
+            doorName = "Main Entrance",
+            granted = true,
+            reason = "Valid card"
+        })
+        
+        -- Get all logs
+        local logs = tac.logger.getAllLogs()
+        for _, log in ipairs(logs) do
+            print(log.cardName .. " accessed " .. log.doorName)
+        end
+        
+        -- Get statistics
+        local stats = tac.logger.getStats()
+        print("Total accesses: " .. stats.totalAccesses)
+        print("Granted: " .. stats.granted)
+        print("Denied: " .. stats.denied)
+    end
+]]
 
 local AccessLogger = {}
 
 --- Initialize the logger with a persistent storage backend
--- @param persistBackend function - persist function for storing logs
+--
+-- Creates a new logger instance that stores logs in persistent storage.
+-- The logger provides methods for recording access events and retrieving statistics.
+--
+---@param persistBackend function The persist function for creating storage backends
+---@return table Logger instance with logAccess(), getAllLogs(), clearLogs(), getStats() methods
+---@usage local logger = AccessLogger.new(require("persist"))
 function AccessLogger.new(persistBackend)
     local logger = {}
     local accessLog = persistBackend("accesslog.json")
     
     --- Log an access event
-    -- @param eventType string - Type of event (access_granted, access_denied, card_created, etc.)
-    -- @param options table - Event details including card, door, matched_tag, reason, message
+    --
+    -- Records an access event with details about the card, door, and outcome.
+    -- Events are stored with timestamps and can be retrieved for auditing.
+    --
+    ---@param eventType string Type of event: "access_granted", "access_denied", "card_created", "card_creation_cancelled"
+    ---@param options table Event details with fields:
+    --   - message (string): Human-readable message
+    --   - card (table): Card info with id, name, tags
+    --   - door (table): Door info with name, tags
+    --   - matched_tag (string): Tag that granted access
+    --   - reason (string): Reason for denial or other outcome
+    ---@usage logger.logAccess("access_granted", {card=card, door=door, matched_tag="admin"})
     function logger.logAccess(eventType, options)
         options = options or {}
         
@@ -51,18 +101,35 @@ function AccessLogger.new(persistBackend)
     end
     
     --- Get all access logs
-    -- @return table - array of log entries
+    --
+    -- Returns all logged events ordered chronologically.
+    --
+    ---@return table Array of log entry objects with timestamp, type, message, card, door, etc.
+    ---@usage local logs = logger.getAllLogs()
     function logger.getAllLogs()
         return accessLog.getAll()
     end
     
     --- Clear all access logs
+    --
+    -- Permanently deletes all logged events. Use with caution.
+    --
+    ---@usage logger.clearLogs()
     function logger.clearLogs()
         accessLog.clear()
     end
     
     --- Get access log statistics
-    -- @return table - statistics object
+    --
+    -- Returns statistics about logged events including totals for each event type.
+    --
+    ---@return table Statistics object with fields:
+    --   - total (number): Total number of events
+    --   - access_granted (number): Count of successful accesses
+    --   - access_denied (number): Count of denied accesses
+    --   - card_created (number): Count of created cards
+    --   - card_creation_cancelled (number): Count of cancelled card creations
+    ---@usage local stats = logger.getStats()
     function logger.getStats()
         local logs = accessLog.getAll()
         local stats = {

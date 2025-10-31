@@ -1,5 +1,13 @@
--- ShopK Node Configuration Extension
--- Allows configuring the ShopK syncNode option for connecting to different Krist nodes
+--[[
+    ShopK Node Configuration Extension
+    
+    Allows configuring the ShopK syncNode option for connecting to different
+    Krist nodes. Provides UI and commands for managing node settings.
+    
+    @module tac.extensions.shopk_node
+    @author Twijn
+    @version 1.0.0
+]]
 
 local FormUI = require("formui")
 

@@ -1,10 +1,40 @@
--- TAC Shop Monitor Extension
--- Displays available shop items on a monitor with payment commands
+--[[
+    TAC Shop Monitor Extension
+    
+    Displays available shop items on a monitor with payment commands.
+    Shows access tiers, pricing, and renewal information on an external monitor.
+    Optionally integrates with shopk_access extension for enhanced functionality.
+    
+    @module tac.extensions.shop_monitor
+    @author Twijn
+    @version 1.0.1
+    
+    @example
+    -- This extension is loaded automatically by TAC.
+    -- Configure in TAC shell:
+    
+    -- > monitor config monitor_side top
+    -- > monitor config display_title "ACCESS SHOP"
+    -- > monitor start
+    -- > monitor stop
+    
+    -- From another extension:
+    function MyExtension.init(tac)
+        local monitor = tac.require("shop_monitor")
+        if monitor then
+            -- Monitor extension provides display functionality
+            print("Shop monitor available")
+        end
+    end
+]]
 
 local ShopMonitorExtension = {
     name = "shop_monitor",
-    version = "1.0.0",
-    description = "Display available shop items on a monitor"
+    version = "1.0.1",
+    description = "Display available shop items on a monitor",
+    author = "Twijn",
+    dependencies = {},
+    optional_dependencies = {"shopk_access"}  -- Enhanced if shopk_access is available
 }
 
 -- Load required libraries

@@ -1,5 +1,12 @@
--- ShopK Access Extension - Subscription Management
--- Handles viewing, canceling, and refunding active subscriptions
+--[[
+    ShopK Access Extension - Subscription Management
+    
+    Handles viewing, canceling, and refunding active subscriptions.
+    Provides tools for managing user subscription lifecycles.
+    
+    @module tac.extensions.shopk_access.subscriptions
+    @author Twijn
+]]
 
 local utils = require("tac.extensions.shopk_access.utils")
 local config = require("tac.extensions.shopk_access.config")
