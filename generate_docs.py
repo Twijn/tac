@@ -517,12 +517,17 @@ class TACDocGenerator:
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
         .install-command code {
             background: none;
             color: #fff;
             padding: 0;
             font-size: 1em;
+            word-break: break-all;
+            flex: 1;
+            min-width: 0;
         }
         .copy-button {
             background: rgba(255, 255, 255, 0.2);
@@ -535,6 +540,7 @@ class TACDocGenerator:
             font-weight: 500;
             transition: all 0.2s;
             white-space: nowrap;
+            flex-shrink: 0;
         }
         .copy-button:hover {
             background: rgba(255, 255, 255, 0.3);
@@ -547,6 +553,39 @@ class TACDocGenerator:
             background: rgba(76, 175, 80, 0.8);
             border-color: rgba(76, 175, 80, 1);
         }
+        @media (max-width: 768px) {
+            .install-box {
+                padding: 1.5rem;
+                margin: 1.5rem 0;
+            }
+            .install-command {
+                padding: 0.75rem 1rem;
+                font-size: 0.85rem;
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .install-command code {
+                font-size: 0.85em;
+                margin-bottom: 0.5rem;
+            }
+            .copy-button {
+                width: 100%;
+                text-align: center;
+            }
+        }
+        @media (max-width: 480px) {
+            .install-box {
+                padding: 1rem;
+                margin: 1rem 0;
+            }
+            .install-command {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
+            }
+            .install-command code {
+                font-size: 0.75em;
+            }
+        }
     </style>
 </head>
 <body>
@@ -558,7 +597,7 @@ class TACDocGenerator:
         <p>Get started with TAC in seconds! Run this command in ComputerCraft:</p>
         <div class="install-command">
             <code>wget run https://raw.githubusercontent.com/Twijn/tac/main/installer.lua</code>
-            <button class="copy-button" onclick="copyInstallCommand()">Copy</button>
+            <button class="copy-button" onclick="copyInstallCommand(this)">Copy</button>
         </div>
         <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 0.5rem;">This will download and run the TAC installer, which will guide you through the setup process.</p>
     </div>
@@ -647,10 +686,9 @@ class TACDocGenerator:
         
         html += """</body>
 <script>
-function copyInstallCommand() {
+function copyInstallCommand(button) {
     const command = 'wget run https://raw.githubusercontent.com/Twijn/tac/main/installer.lua';
     navigator.clipboard.writeText(command).then(() => {
-        const button = event.target;
         const originalText = button.textContent;
         button.textContent = 'Copied!';
         button.classList.add('copied');
