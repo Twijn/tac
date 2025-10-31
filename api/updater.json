@@ -1,6 +1,6 @@
 {
   "name": "updater",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Provides auto-update functionality for TAC libraries and (eventually) the TAC system itself via lib/updater.lua. This extension checks for updates on startup and provides commands to check for and install updates.",
   "author": "Twijn",
   "main_file": "tac/extensions/updater.lua",
