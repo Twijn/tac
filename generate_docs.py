@@ -140,8 +140,8 @@ class TACDocGenerator:
             if example_lines:
                 module['examples'].append('\n'.join(example_lines))
         
-        # Extract functions
-        func_pattern = r'((?:[ \t]*---.*?\n)+)[ \t]*(local\s+)?function\s+([\w.:]+)\s*\((.*?)\)'
+        # Extract functions (allow blank lines between docs and function, support both -- and --- style comments)
+        func_pattern = r'((?:[ \t]*---?.*?\n)+)(?:[ \t]*\n)*[ \t]*(local\s+)?function\s+([\w.:]+)\s*\((.*?)\)'
         for match in re.finditer(func_pattern, content, re.MULTILINE):
             doc_block, is_local, func_name, params = match.groups()
             
@@ -167,18 +167,23 @@ class TACDocGenerator:
                 line = line.strip()
                 if line.startswith('---'):
                     line = line[3:].strip()
-                    if line.startswith('@param'):
-                        param_match = re.match(r'@param\s+(\w+\??)\s+(\S+)(?:\s+(.+))?', line)
-                        if param_match:
-                            func_info['params'].append({
-                                'name': param_match.group(1),
-                                'type': param_match.group(2),
-                                'description': param_match.group(3) or ''
-                            })
-                    elif line.startswith('@return'):
-                        func_info['returns'] = line.replace('@return', '').strip()
-                    elif not line.startswith('@'):
-                        desc_lines.append(line)
+                elif line.startswith('--'):
+                    line = line[2:].strip()
+                else:
+                    continue
+                    
+                if line.startswith('@param'):
+                    param_match = re.match(r'@param\s+(\w+\??)\s+(\S+)(?:\s+(.+))?', line)
+                    if param_match:
+                        func_info['params'].append({
+                            'name': param_match.group(1),
+                            'type': param_match.group(2),
+                            'description': param_match.group(3) or ''
+                        })
+                elif line.startswith('@return'):
+                    func_info['returns'] = line.replace('@return', '').strip()
+                elif not line.startswith('@'):
+                    desc_lines.append(line)
             
             func_info['description'] = ' '.join(desc_lines)
             if func_info['description'] or func_info['params'] or func_info['returns']:
@@ -607,6 +612,7 @@ class TACDocGenerator:
         # Categorize and organize modules hierarchically
         categories = {
             'Core Modules': [m for m in modules if m['path'].startswith('tac/core/') and '/' not in m['path'][9:]],
+            'Library Modules': [m for m in modules if m['path'].startswith('tac/lib/')],
             'Extension Modules': [],
             'Command Modules': [m for m in modules if m['path'].startswith('tac/commands/')],
         }
@@ -734,6 +740,7 @@ function copyInstallCommand(button) {
                     'download_url': 'https://raw.githubusercontent.com/Twijn/tac/main/tac/init.lua'
                 },
                 'core': {},
+                'lib': {},
                 'commands': {},
                 'extensions': {}
             }
@@ -744,6 +751,13 @@ function copyInstallCommand(button) {
             if m['path'].startswith('tac/core/'):
                 module_name = m['name'].replace('tac.core.', '')
                 versions['tac']['core'][module_name] = {
+                    'version': m.get('version', '0.0.0'),
+                    'path': m['path'],
+                    'download_url': f"https://raw.githubusercontent.com/Twijn/tac/main/{m['path']}"
+                }
+            elif m['path'].startswith('tac/lib/'):
+                module_name = m['name'].replace('tac.lib.', '')
+                versions['tac']['lib'][module_name] = {
                     'version': m.get('version', '0.0.0'),
                     'path': m['path'],
                     'download_url': f"https://raw.githubusercontent.com/Twijn/tac/main/{m['path']}"
@@ -825,13 +839,24 @@ function copyInstallCommand(button) {
         """Generate documentation for all Lua files"""
         self.output_dir.mkdir(exist_ok=True, parents=True)
         
-        # Find all Lua files (excluding data, test, lib directories)
+        # Find all Lua files (excluding data, test directories)
         lua_files = []
         for ext in ['*.lua']:
             lua_files.extend(self.input_dir.rglob(ext))
         
-        # Filter out unwanted files (lib/ has separate docs at ccmisc.twijn.dev)
-        lua_files = [f for f in lua_files if not any(skip in str(f) for skip in ['data/', 'test/', '.git', 'lib/'])]
+        # Filter out unwanted files
+        # Note: We INCLUDE tac/lib/ but exclude top-level lib/ (which has separate docs at ccmisc.twijn.dev)
+        filtered_files = []
+        for f in lua_files:
+            rel_path = str(f.relative_to(self.input_dir))
+            # Skip data/, test/, .git
+            if any(skip in rel_path for skip in ['data/', 'test/', '.git']):
+                continue
+            # Skip top-level lib/ but NOT tac/lib/
+            if rel_path.startswith('lib/') and not rel_path.startswith('tac/lib/'):
+                continue
+            filtered_files.append(f)
+        lua_files = filtered_files
         
         # Parse each file
         for lua_file in sorted(lua_files):

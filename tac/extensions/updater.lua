@@ -8,13 +8,13 @@
     
     @module updater
     @author Twijn
-    @version 1.2.0
+    @version 1.3.0
     @license MIT
 ]]
 
 local UpdaterExtension = {
     name = "updater",
-    version = "1.2.0",
+    version = "1.3.0",
     description = "Auto-update TAC core, extensions, and libraries",
     author = "Twijn",
     dependencies = {},
@@ -368,6 +368,13 @@ function UpdaterExtension.init(tac)
                             safeDownloadFile(info.download_url, info.path, forceUpdate, d)
                         end
                         
+                        -- Update library modules (always update these with core)
+                        if versions.tac.lib then
+                            for name, info in pairs(versions.tac.lib) do
+                                safeDownloadFile(info.download_url, info.path, forceUpdate, d)
+                            end
+                        end
+                        
                         -- Update command modules (always update these with core)
                         if versions.tac.commands then
                             for name, info in pairs(versions.tac.commands) do
@@ -436,6 +443,13 @@ function UpdaterExtension.init(tac)
                 -- Update core modules
                 for name, info in pairs(versions.tac.core) do
                     safeDownloadFile(info.download_url, info.path, forceUpdate, d)
+                end
+                
+                -- Update library modules
+                if versions.tac.lib then
+                    for name, info in pairs(versions.tac.lib) do
+                        safeDownloadFile(info.download_url, info.path, forceUpdate, d)
+                    end
                 end
                 
                 -- Update command modules
