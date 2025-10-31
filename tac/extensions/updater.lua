@@ -8,13 +8,13 @@
     
     @module updater
     @author Twijn
-    @version 1.1.4
+    @version 1.1.5
     @license MIT
 ]]
 
 local UpdaterExtension = {
     name = "updater",
-    version = "1.1.4",
+    version = "1.1.5",
     description = "Auto-update TAC core, extensions, and libraries",
     author = "Twijn",
     dependencies = {},
@@ -254,29 +254,22 @@ function UpdaterExtension.init(tac)
                 d.mess("Updating TAC core...")
                 local versions, err = fetchJSON(API_BASE .. "/versions.json")
                 if versions then
-                    -- Update main init.lua
-                    if versions.tac.init then
+                    local coreUpdateCount = 0
+                    
+                    -- Update main init.lua if version is newer
+                    if versions.tac.init and compareVersions(tac.version, versions.tac.version) then
                         local success, downloadErr = downloadFile(versions.tac.init.download_url, versions.tac.init.path)
                         if success then
                             d.mess("Updated: " .. versions.tac.init.path)
+                            coreUpdateCount = coreUpdateCount + 1
                         else
                             d.err("Failed to update " .. versions.tac.init.path .. ": " .. tostring(downloadErr))
                         end
                     end
                     
-                    -- Update core modules
-                    for name, info in pairs(versions.tac.core) do
-                        local success, downloadErr = downloadFile(info.download_url, info.path)
-                        if success then
-                            d.mess("Updated: " .. info.path)
-                        else
-                            d.err("Failed to update " .. info.path .. ": " .. tostring(downloadErr))
-                        end
-                    end
-                    
-                    -- Update command modules
-                    if versions.tac.commands then
-                        for name, info in pairs(versions.tac.commands) do
+                    -- Update core modules (always update these with core)
+                    if coreUpdateCount > 0 then
+                        for name, info in pairs(versions.tac.core) do
                             local success, downloadErr = downloadFile(info.download_url, info.path)
                             if success then
                                 d.mess("Updated: " .. info.path)
@@ -284,36 +277,56 @@ function UpdaterExtension.init(tac)
                                 d.err("Failed to update " .. info.path .. ": " .. tostring(downloadErr))
                             end
                         end
+                        
+                        -- Update command modules (always update these with core)
+                        if versions.tac.commands then
+                            for name, info in pairs(versions.tac.commands) do
+                                local success, downloadErr = downloadFile(info.download_url, info.path)
+                                if success then
+                                    d.mess("Updated: " .. info.path)
+                                else
+                                    d.err("Failed to update " .. info.path .. ": " .. tostring(downloadErr))
+                                end
+                            end
+                        end
+                    else
+                        d.mess("TAC core is already up to date")
                     end
                     
                     -- Update extensions
                     d.mess("Updating extensions...")
                     for extName, extData in pairs(tac.extensions) do
                         if versions.tac.extensions[extName] then
-                            d.mess("Updating extension: " .. extName)
-                            local manifest, manifestErr = fetchJSON(API_BASE .. "/" .. extName .. ".json")
-                            if manifest then
-                                -- Update main file
-                                local success = downloadFile(manifest.download_url, manifest.main_file)
-                                if success then
-                                    d.mess("Updated: " .. manifest.main_file)
-                                else
-                                    d.err("Failed: " .. manifest.main_file)
-                                end
-                                
-                                -- Update submodules
-                                if manifest.submodules then
-                                    for _, submodule in ipairs(manifest.submodules) do
-                                        local success, downloadErr = downloadFile(submodule.download_url, submodule.path)
-                                        if success then
-                                            d.mess("Updated: " .. submodule.path)
-                                        else
-                                            d.err("Failed: " .. submodule.path)
+                            local remoteVersion = versions.tac.extensions[extName].version
+                            local localVersion = extData.version
+                            
+                            -- Only update if remote version is newer
+                            if compareVersions(localVersion, remoteVersion) then
+                                d.mess("Updating extension: " .. extName .. " (" .. localVersion .. " -> " .. remoteVersion .. ")")
+                                local manifest, manifestErr = fetchJSON(API_BASE .. "/" .. extName .. ".json")
+                                if manifest then
+                                    -- Update main file
+                                    local success = downloadFile(manifest.download_url, manifest.main_file)
+                                    if success then
+                                        d.mess("Updated: " .. manifest.main_file)
+                                    else
+                                        d.err("Failed: " .. manifest.main_file)
+                                    end
+                                    
+                                    -- Update submodules
+                                    if manifest.submodules then
+                                        for _, submodule in ipairs(manifest.submodules) do
+                                            local success, downloadErr = downloadFile(submodule.download_url, submodule.path)
+                                            if success then
+                                                d.mess("Updated: " .. submodule.path)
+                                            else
+                                                d.err("Failed: " .. submodule.path)
+                                            end
                                         end
                                     end
+                                else
+                                    d.err("Failed to fetch manifest for " .. extName .. ": " .. tostring(manifestErr))
                                 end
-                            else
-                                d.err("Failed to fetch manifest for " .. extName .. ": " .. tostring(manifestErr))
                             end
                         end
                     end
