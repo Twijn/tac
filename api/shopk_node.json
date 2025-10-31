@@ -1,0 +1,9 @@
+{
+  "name": "shopk_node",
+  "version": "1.0.0",
+  "description": "Allows configuring the ShopK syncNode option for connecting to different Krist nodes. Provides UI and commands for managing node settings.",
+  "author": "Twijn",
+  "main_file": "tac/extensions/shopk_node.lua",
+  "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_node.lua",
+  "submodules": null
+}

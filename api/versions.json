@@ -1,0 +1,59 @@
+{
+  "tac": {
+    "version": "1.3.0",
+    "core": {
+      "card_manager": {
+        "version": "1.0.1",
+        "path": "tac/core/card_manager.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/core/card_manager.lua"
+      },
+      "extension_loader": {
+        "version": "1.0.1",
+        "path": "tac/core/extension_loader.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/core/extension_loader.lua"
+      },
+      "hardware": {
+        "version": "1.0.1",
+        "path": "tac/core/hardware.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/core/hardware.lua"
+      },
+      "logger": {
+        "version": "1.0.1",
+        "path": "tac/core/logger.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/core/logger.lua"
+      },
+      "security": {
+        "version": "1.0.1",
+        "path": "tac/core/security.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/core/security.lua"
+      }
+    },
+    "extensions": {
+      "_example": {
+        "version": "1.0.1",
+        "path": "tac/extensions/_example.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/_example.lua"
+      },
+      "shop_monitor": {
+        "version": "1.0.1",
+        "path": "tac/extensions/shop_monitor.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shop_monitor.lua"
+      },
+      "shopk_access": {
+        "version": "1.0.2",
+        "path": "tac/extensions/shopk_access.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_access.lua"
+      },
+      "shopk_node": {
+        "version": "1.0.0",
+        "path": "tac/extensions/shopk_node.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_node.lua"
+      },
+      "updater": {
+        "version": "1.1.1",
+        "path": "tac/extensions/updater.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/updater.lua"
+      }
+    }
+  }
+}

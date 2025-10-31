@@ -1,0 +1,9 @@
+{
+  "name": "_example",
+  "version": "1.0.1",
+  "description": "This file demonstrates how to create a TAC extension. Extensions can register commands, add hooks to TAC events, and provide custom functionality.",
+  "author": "Twijn",
+  "main_file": "tac/extensions/_example.lua",
+  "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/_example.lua",
+  "submodules": null
+}

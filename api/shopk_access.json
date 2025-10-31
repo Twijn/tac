@@ -1,0 +1,58 @@
+{
+  "name": "shopk_access",
+  "version": "1.0.2",
+  "description": "Sells access tags as SKUs via ShopK/Kromer payments. Integrates with ShopK to allow users to purchase access tags through the Kromer payment system. Modular version using separate modules for different functionality.",
+  "author": "Twijn",
+  "main_file": "tac/extensions/shopk_access.lua",
+  "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_access.lua",
+  "submodules": [
+    {
+      "name": "commands",
+      "path": "tac/extensions/shopk_access/commands.lua",
+      "version": null,
+      "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_access/commands.lua"
+    },
+    {
+      "name": "config",
+      "path": "tac/extensions/shopk_access/config.lua",
+      "version": null,
+      "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_access/config.lua"
+    },
+    {
+      "name": "init",
+      "path": "tac/extensions/shopk_access/init.lua",
+      "version": null,
+      "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_access/init.lua"
+    },
+    {
+      "name": "shop",
+      "path": "tac/extensions/shopk_access/shop.lua",
+      "version": null,
+      "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_access/shop.lua"
+    },
+    {
+      "name": "slots",
+      "path": "tac/extensions/shopk_access/slots.lua",
+      "version": null,
+      "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_access/slots.lua"
+    },
+    {
+      "name": "subscriptions",
+      "path": "tac/extensions/shopk_access/subscriptions.lua",
+      "version": null,
+      "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_access/subscriptions.lua"
+    },
+    {
+      "name": "ui",
+      "path": "tac/extensions/shopk_access/ui.lua",
+      "version": null,
+      "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_access/ui.lua"
+    },
+    {
+      "name": "utils",
+      "path": "tac/extensions/shopk_access/utils.lua",
+      "version": null,
+      "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_access/utils.lua"
+    }
+  ]
+}
