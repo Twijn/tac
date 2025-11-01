@@ -1,5 +1,5 @@
 -- TAC (Terminal Access Control) Installer
--- Version 1.1.3
+-- Version 1.2.0
 -- A comprehensive installer for the TAC system with module management
 
 
@@ -7,8 +7,14 @@
 local libs = {"cmd", "formui", "persist", "s", "shopk", "tables", "updater"}
 
 local TAC_INSTALLER = {
-    version = "1.1.3",
+    version = "1.2.0",
     name = "TAC Installer",
+    
+    -- API configuration
+    api = {
+        base_url = "https://tac.twijn.dev/api",
+        versions_url = "https://tac.twijn.dev/api/versions.json"
+    },
     
     -- GitHub configuration
     github = {
@@ -20,71 +26,9 @@ local TAC_INSTALLER = {
         }
     },
     
-    -- Core files that are always installed
-    core_files = {
-        "startup.lua",
-        "tac/init.lua",
-        "tac/commands/card.lua",
-        "tac/commands/door.lua",
-        "tac/commands/logs.lua",
-        "tac/core/card_manager.lua",
-        "tac/core/hardware.lua",
-        "tac/core/logger.lua",
-        "tac/core/security.lua",
-        "tac/lib/shopk_shared.lua",
-        "tac/extensions/_example.lua"
-    },
-    
-    -- Library files from GitHub
-    lib_files = {
-        "cmd.lua",
-        "formui.lua",
-        "persist.lua",
-        "s.lua",
-        "shopk.lua",
-        "tables.lua",
-        "shopk_node.lua"
-    },
-    
-    -- Available modules
-    modules = {
-        shopk_access = {
-            name = "ShopK Access Integration",
-            description = "Integrates TAC with ShopK for payment-based access control",
-            files = {
-                "tac/extensions/shopk_access.lua",
-                "tac/extensions/shopk_access/init.lua",
-                "tac/extensions/shopk_access/commands.lua",
-                "tac/extensions/shopk_access/config.lua",
-                "tac/extensions/shopk_access/shop.lua",
-                "tac/extensions/shopk_access/slots.lua",
-                "tac/extensions/shopk_access/subscriptions.lua",
-                "tac/extensions/shopk_access/ui.lua",
-                "tac/extensions/shopk_access/utils.lua"
-            }
-        },
-        shopk_node = {
-            name = "ShopK Node",
-            description = "Configure ShopK syncNode setting",
-            files = {
-                "tac/extensions/shopk_node.lua"
-            }
-        },
-        shop_monitor = {
-            name = "Shop Monitor",
-            description = "Monitor and display shop information",
-            files = {
-                "tac/extensions/shop_monitor.lua"
-            }
-        },
-        updater = {
-            name = "Auto-Updater",
-            description = "Enables auto-update of libraries and (eventually) tsc via lib/updater.lua",
-            files = {
-                "tac/extensions/updater.lua"
-            }
-        }
-    },
+    -- Cached data (populated from API)
+    versions = nil,
+    modules = nil,
     
     -- Default data files
     data_files = {
@@ -94,6 +38,125 @@ local TAC_INSTALLER = {
         "data/accesslog.json"
     }
 }
+
+-- API utilities
+local function fetchJSON(url)
+    local response = http.get(url)
+    if not response then
+        return nil, "Failed to fetch: " .. url
+    end
+    local content = response.readAll()
+    response.close()
+    return textutils.unserializeJSON(content)
+end
+
+function TAC_INSTALLER.fetchVersions()
+    if TAC_INSTALLER.versions then
+        return TAC_INSTALLER.versions
+    end
+    
+    local versions, err = fetchJSON(TAC_INSTALLER.api.versions_url)
+    if not versions then
+        error("Failed to fetch version info: " .. tostring(err))
+    end
+    
+    TAC_INSTALLER.versions = versions
+    return versions
+end
+
+function TAC_INSTALLER.fetchModuleInfo(moduleName)
+    local url = TAC_INSTALLER.api.base_url .. "/" .. moduleName .. ".json"
+    return fetchJSON(url)
+end
+
+function TAC_INSTALLER.buildModulesFromAPI()
+    if TAC_INSTALLER.modules then
+        return TAC_INSTALLER.modules
+    end
+    
+    local versions = TAC_INSTALLER.fetchVersions()
+    local modules = {}
+    
+    -- Build module list from extensions in versions.json
+    for extName, extData in pairs(versions.tac.extensions) do
+        if extName ~= "_example" then  -- Skip example extension
+            -- Fetch detailed module info
+            local moduleInfo = TAC_INSTALLER.fetchModuleInfo(extName)
+            
+            if moduleInfo then
+                local files = {extData.path}
+                
+                -- Add submodules if they exist
+                if moduleInfo.submodules then
+                    for _, submodule in ipairs(moduleInfo.submodules) do
+                        table.insert(files, submodule.path)
+                    end
+                end
+                
+                modules[extName] = {
+                    name = moduleInfo.name or extName,
+                    description = moduleInfo.description or "No description available",
+                    version = extData.version,
+                    files = files
+                }
+            else
+                -- Fallback to basic info from versions.json
+                modules[extName] = {
+                    name = extName,
+                    description = "TAC extension",
+                    version = extData.version,
+                    files = {extData.path}
+                }
+            end
+        end
+    end
+    
+    TAC_INSTALLER.modules = modules
+    return modules
+end
+
+function TAC_INSTALLER.getCoreFiles()
+    local versions = TAC_INSTALLER.fetchVersions()
+    local files = {}
+    
+    -- Add startup.lua if it exists
+    if fs.exists("startup.lua") then
+        -- Don't overwrite existing startup.lua
+    else
+        table.insert(files, {path = "startup.lua", url = TAC_INSTALLER.github.tac_base_url .. "/startup.lua"})
+    end
+    
+    -- Add init.lua
+    if versions.tac.init then
+        table.insert(files, {path = versions.tac.init.path, url = versions.tac.init.download_url})
+    end
+    
+    -- Add core files
+    for name, info in pairs(versions.tac.core) do
+        table.insert(files, {path = info.path, url = info.download_url})
+    end
+    
+    -- Add lib files
+    if versions.tac.lib then
+        for name, info in pairs(versions.tac.lib) do
+            table.insert(files, {path = info.path, url = info.download_url})
+        end
+    end
+    
+    -- Add command files
+    if versions.tac.commands then
+        for name, info in pairs(versions.tac.commands) do
+            table.insert(files, {path = info.path, url = info.download_url})
+        end
+    end
+    
+    -- Add _example extension
+    if versions.tac.extensions._example then
+        table.insert(files, {path = versions.tac.extensions._example.path, url = versions.tac.extensions._example.download_url})
+    end
+    
+    return files
+end
 
 -- Progress bar utilities
 local function drawProgressBar(current, total, filename)
@@ -161,15 +224,16 @@ local function downloadFile(url, path, filename)
 end
 
 -- Main installation functions
-function TAC_INSTALLER.install(type, files, baseUrl)
-    print("Installing " .. type .. " files from GitHub (" .. baseUrl .. ")...")
+function TAC_INSTALLER.installFiles(type, files)
+    print("Installing " .. type .. " files...")
 
     local total = #files
-    for i, filename in ipairs(files) do
+    for i, fileInfo in ipairs(files) do
+        local filename = fileInfo.path or fileInfo
         drawProgressBar(i - 1, total, filename)
 
-        local url = baseUrl .. "/" .. filename
-        local path = "lib/" .. filename
+        local url = fileInfo.url or (TAC_INSTALLER.github.tac_base_url .. "/" .. filename)
+        local path = fileInfo.path or filename
         
         downloadFile(url, path, filename)
         sleep(0.1) -- Small delay for visual feedback
@@ -187,11 +251,15 @@ function TAC_INSTALLER.installLibraries()
 end
 
 function TAC_INSTALLER.installCore()
-    TAC_INSTALLER.install("Core", TAC_INSTALLER.core_files, TAC_INSTALLER.github.tac_base_url)
+    local coreFiles = TAC_INSTALLER.getCoreFiles()
+    TAC_INSTALLER.installFiles("Core", coreFiles)
 end
 
 function TAC_INSTALLER.installModule(moduleName)
-    local module = TAC_INSTALLER.modules[moduleName]
+    -- Build modules from API if not already cached
+    local modules = TAC_INSTALLER.buildModulesFromAPI()
+    local module = modules[moduleName]
+    
     if not module then
         term.setTextColor(colors.red)
         print("Module not found: " .. moduleName)
@@ -202,27 +270,35 @@ function TAC_INSTALLER.installModule(moduleName)
     print("Installing module: " .. module.name)
     print("Description: " .. module.description)
     
-    local total = #module.files
-    for i, filename in ipairs(module.files) do
-        drawProgressBar(i - 1, total, filename)
+    -- Get module info from API for accurate file list
+    local moduleInfo = TAC_INSTALLER.fetchModuleInfo(moduleName)
+    local files = {}
+    
+    if moduleInfo then
+        -- Add main file
+        table.insert(files, {path = moduleInfo.main_file, url = moduleInfo.download_url})
         
-        local url = TAC_INSTALLER.github.tac_base_url .. "/" .. filename
-        local path = filename
-        
-        downloadFile(url, path, filename)
-        sleep(0.1)
+        -- Add submodules
+        if moduleInfo.submodules then
+            for _, submodule in ipairs(moduleInfo.submodules) do
+                table.insert(files, {path = submodule.path, url = submodule.download_url})
+            end
+        end
+    else
+        -- Fallback to cached module info
+        for _, path in ipairs(module.files) do
+            table.insert(files, {path = path, url = TAC_INSTALLER.github.tac_base_url .. "/" .. path})
+        end
     end
     
-    drawProgressBar(total, total, "Complete!")
-    print("\n")
-    term.setTextColor(colors.lime)
-    print("Module '" .. module.name .. "' installed successfully!")
-    term.setTextColor(colors.white)
+    TAC_INSTALLER.installFiles("Module '" .. module.name .. "'", files)
     return true
 end
 
 function TAC_INSTALLER.removeModule(moduleName)
-    local module = TAC_INSTALLER.modules[moduleName]
+    local modules = TAC_INSTALLER.buildModulesFromAPI()
+    local module = modules[moduleName]
+    
     if not module then
         term.setTextColor(colors.red)
         print("Module not found: " .. moduleName)
@@ -246,9 +322,12 @@ function TAC_INSTALLER.removeModule(moduleName)
 end
 
 function TAC_INSTALLER.listModules()
+    print("Fetching module list from API...")
+    local modules = TAC_INSTALLER.buildModulesFromAPI()
+    
     print("Available modules:")
     
-    for name, module in pairs(TAC_INSTALLER.modules) do
+    for name, module in pairs(modules) do
         -- Check if installed
         local installed = true
         for _, filename in ipairs(module.files) do
@@ -273,6 +352,7 @@ function TAC_INSTALLER.listModules()
         end
         
         term.setTextColor(colors.white)
+        term.write(" v" .. (module.version or "?"))
         print()
     end
 end
@@ -286,9 +366,20 @@ function TAC_INSTALLER.fullInstall(selectedModules)
     term.setTextColor(colors.cyan)
     print("+==========================================+")
     print("|         TAC System Installer            |")
-    print("|              Version 1.0.0              |")
+    print("|              Version "..TAC_INSTALLER.version.."              |")
     print("+==========================================+")
     term.setTextColor(colors.white)
+    print()
+    
+    -- Fetch version info from API
+    print("Fetching latest version information...")
+    local ok, err = pcall(TAC_INSTALLER.fetchVersions)
+    if not ok then
+        term.setTextColor(colors.red)
+        print("Error: " .. tostring(err))
+        term.setTextColor(colors.white)
+        return
+    end
     print()
     
     -- Install libraries
@@ -332,6 +423,9 @@ local function showHelp()
     print("  list-modules         - List available modules")
     print("  --help, -h           - Show this help")
     print()
+    print("Note: Module information is dynamically fetched from")
+    print("      https://tac.twijn.dev/api/versions.json")
+    print()
     print("Examples:")
     print("  installer install")
     print("  installer install-libs")
@@ -359,14 +453,15 @@ if #args == 0 or args[1] == "install" then
     
     local input = read()
     if input and input ~= "" then
+        local modules = TAC_INSTALLER.buildModulesFromAPI()
         if input == "all" then
-            for name, _ in pairs(TAC_INSTALLER.modules) do
+            for name, _ in pairs(modules) do
                 table.insert(selectedModules, name)
             end
         else
             for module in input:gmatch("([^,]+)") do
                 module = module:match("^%s*(.-)%s*$") -- trim whitespace
-                if TAC_INSTALLER.modules[module] then
+                if modules[module] then
                     table.insert(selectedModules, module)
                 end
             end
