@@ -1,143 +1,124 @@
 -- TAC Logs Command Module
 -- Handles access log viewing and management
 
+local interactiveList = require("tac.lib.interactive_list")
 local LogsCommand = {}
 
--- Shared function to display logs with pagination
+-- Format a short log line for list display
+local function formatLogLine(log, tac)
+    local timestamp = tac.logger.formatTimestamp(log.timestamp)
+    local parts = {}
+    
+    -- Add card info (condensed)
+    if log.card then
+        local cardName = log.card.name or "??"
+        table.insert(parts, cardName)
+    end
+    
+    -- Add door info
+    if log.door then
+        table.insert(parts, log.door.name or "??")
+    end
+    
+    -- Format: [TIME] [C] TYPE | Card | @Door
+    return string.format("[%s] %s", timestamp, table.concat(parts, " | "))
+end
+
+-- Format detailed log information for detail view
+local function formatLogDetails(log, tac)
+    local SecurityCore = require("tac.core.security")
+    local details = {}
+    
+    -- Header
+    table.insert(details, "=== LOG ENTRY DETAILS ===")
+    table.insert(details, "")
+    
+    -- Timestamp
+    table.insert(details, "Timestamp: " .. tac.logger.formatTimestamp(log.timestamp))
+    table.insert(details, "Type: " .. log.type:upper())
+    table.insert(details, "")
+    
+    -- Card information
+    if log.card then
+        table.insert(details, "--- Card Information ---")
+        table.insert(details, "Name: " .. (log.card.name or "Unknown"))
+        if log.card.id then
+            table.insert(details, "Short ID: " .. SecurityCore.truncateCardId(log.card.id))
+        end
+        if log.card.tags then
+            table.insert(details, "Tags: " .. table.concat(log.card.tags, ", "))
+        end
+        if log.card.expiration then
+            table.insert(details, "Expiration: " .. tac.logger.formatTimestamp(log.card.expiration))
+        end
+        table.insert(details, "")
+    end
+    
+    -- Door information
+    if log.door then
+        table.insert(details, "--- Door Information ---")
+        table.insert(details, "Name: " .. (log.door.name or "Unknown"))
+        if log.door.side then
+            table.insert(details, "Side: " .. log.door.side)
+        end
+        if log.door.required_tags then
+            table.insert(details, "Required Tags: " .. table.concat(log.door.required_tags, ", "))
+        end
+        table.insert(details, "")
+    end
+    
+    -- Additional information
+    if log.matched_tag then
+        table.insert(details, "Matched Tag: " .. log.matched_tag)
+    end
+    if log.reason then
+        table.insert(details, "Reason: " .. log.reason)
+    end
+    if log.message then
+        table.insert(details, "Message: " .. log.message)
+    end
+    
+    -- Raw data (for debugging)
+    if log.data then
+        table.insert(details, "")
+        table.insert(details, "--- Additional Data ---")
+        for k, v in pairs(log.data) do
+            if type(v) ~= "table" then
+                table.insert(details, k .. ": " .. tostring(v))
+            end
+        end
+    end
+    
+    return details
+end
+
+-- Display logs using interactive list
 local function displayLogs(logs, filterType, tac)
     if #logs == 0 then
         print("No logs found.")
         return
     end
     
-    local w, h = term.getSize()
-    local logsPerPage = h - 5  -- Reserve 5 lines for header/footer
-    local totalPages = math.ceil(#logs / logsPerPage)
-    local currentPage = 1
-    local scrollOffset = 0  -- Horizontal scroll offset
-    
-    local function getLogColor(logType)
-        if logType == "access_granted" then
-            return colors.green
-        elseif logType == "access_denied" then
-            return colors.red
-        elseif logType == "card_created" then
-            return colors.blue
-        elseif logType == "card_creation_cancelled" then
-            return colors.yellow
-        else
-            return colors.white
-        end
+    -- Reverse logs to show newest first
+    local reversedLogs = {}
+    for i = #logs, 1, -1 do
+        table.insert(reversedLogs, logs[i])
     end
     
-    local function formatLogLine(log)
-        local timestamp = tac.logger.formatTimestamp(log.timestamp)
-        local parts = {}
-        
-        -- Add type
-        table.insert(parts, log.type:upper())
-        
-        -- Add card info (condensed)
-        if log.card then
-            local cardName = log.card.name or "?"
-            if log.card.id then
-                local SecurityCore = require("tac.core.security")
-                cardName = cardName .. "(" .. SecurityCore.truncateCardId(log.card.id) .. ")"
-            end
-            table.insert(parts, cardName)
-        end
-        
-        -- Add door info
-        if log.door then
-            table.insert(parts, "@" .. (log.door.name or "?"))
-        end
-        
-        -- Add extra info
-        if log.matched_tag then
-            table.insert(parts, "tag:" .. log.matched_tag)
-        elseif log.reason then
-            table.insert(parts, log.reason)
-        end
-        
-        -- Format: [TIME] TYPE | Card(ID) | @Door | extra
-        return string.format("[%s] %s", timestamp, table.concat(parts, " | "))
-    end
+    local title = filterType and ("LOGS: " .. filterType:upper()) or "ACCESS LOGS"
+    title = title .. " (" .. #logs .. " entries)"
     
-    local function drawLogs()
-        term.setBackgroundColor(colors.black)
-        term.clear()
-        term.setCursorPos(1, 1)
-        
-        -- Header
-        term.setTextColor(colors.lightBlue)
-        local headerText = filterType and ("LOGS: " .. filterType:upper()) or "ACCESS LOGS"
-        print("========== " .. headerText .. " ==========")
-        term.setTextColor(colors.white)
-
-        print(string.format("Page %d/%d (%d total) | Arrows=Nav Q=Quit", currentPage, totalPages, #logs))
-        print(string.format("Scroll: +%d", scrollOffset))
-
-        term.setTextColor(colors.gray)
-        print(string.rep("-", w))
-        
-        -- Calculate which logs to show (newest first)
-        local startIdx = #logs - (currentPage - 1) * logsPerPage
-        local endIdx = math.max(startIdx - logsPerPage + 1, 1)
-        
-        -- Show logs (most recent first)
-        for i = startIdx, endIdx, -1 do
-            local log = logs[i]
-            if log then
-                term.setTextColor(getLogColor(log.type))
-                local fullLine = formatLogLine(log)
-                
-                -- Apply horizontal scrolling
-                local displayLine = fullLine
-                if scrollOffset > 0 then
-                    if #fullLine > scrollOffset then
-                        displayLine = fullLine:sub(scrollOffset + 1)
-                    else
-                        displayLine = ""
-                    end
-                end
-                
-                -- Truncate if too long
-                if #displayLine > w then
-                    displayLine = displayLine:sub(1, w - 3) .. "..."
-                end
-                
-                print(displayLine)
-            end
-        end
-        
-        -- Footer
-        term.setTextColor(colors.gray)
-        term.setCursorPos(1, h)
-        term.write(string.rep("-", w))
-    end
-    
-    drawLogs()
-    
-    -- Handle navigation
-    while true do
-        local event, key = os.pullEvent("key")
-        if key == keys.q then
-            sleep()
-            break
-        elseif key == keys.up and currentPage > 1 then
-            currentPage = currentPage - 1
-            drawLogs()
-        elseif key == keys.down and currentPage < totalPages then
-            currentPage = currentPage + 1
-            drawLogs()
-        elseif key == keys.left and scrollOffset > 0 then
-            scrollOffset = math.max(0, scrollOffset - 10)
-            drawLogs()
-        elseif key == keys.right then
-            scrollOffset = scrollOffset + 10
-            drawLogs()
-        end
-    end
+    interactiveList.show({
+        title = title,
+        items = reversedLogs,
+        formatItem = function(log) 
+            return formatLogLine(log, tac) 
+        end,
+        formatDetails = function(log)
+            return formatLogDetails(log, tac)
+        end,
+        showHelp = true
+    })
 end
 
 function LogsCommand.create(tac)
