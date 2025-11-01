@@ -12,6 +12,7 @@ local monitor_ui = {}
 
 -- UI state
 local activeMonitor = nil
+local activeMonitorSide = nil  -- Store the monitor's peripheral name
 local activeSession = nil
 local touchListener = nil
 local isInUse = false  -- Flag to indicate if monitor is showing interactive UI
@@ -44,12 +45,14 @@ function monitor_ui.init(tac, monitorSide)
     if monitorSide then
         if peripheral.getType(monitorSide) == "monitor" then
             activeMonitor = peripheral.wrap(monitorSide)
+            activeMonitorSide = monitorSide
         end
     else
         -- Auto-detect monitor
         for _, side in ipairs(peripheral.getNames()) do
             if peripheral.getType(side) == "monitor" then
                 activeMonitor = peripheral.wrap(side)
+                activeMonitorSide = side
                 term.setTextColor(colors.cyan)
                 print("Monitor UI: Found monitor on " .. side)
                 term.setTextColor(colors.white)
@@ -431,12 +434,23 @@ end
 -- @param x number - touch X coordinate
 -- @param y number - touch Y coordinate
 function monitor_ui.handleTouch(x, y)
-    if not activeSession or not activeSession.buttons then return end
+    print("[DEBUG] Touch received at " .. x .. ", " .. y)
+    print("[DEBUG] Active session: " .. tostring(activeSession ~= nil))
+    
+    if not activeSession or not activeSession.buttons then 
+        print("[DEBUG] No active session or buttons")
+        return 
+    end
+    
+    print("[DEBUG] Session type: " .. tostring(activeSession.type))
+    print("[DEBUG] Button count: " .. #activeSession.buttons)
     
     local touch = {x = x, y = y}
     
-    for _, button in ipairs(activeSession.buttons) do
+    for i, button in ipairs(activeSession.buttons) do
+        print("[DEBUG] Checking button " .. i .. ": bounds=" .. textutils.serialize(button.bounds))
         if isTouchInButton(touch, button.bounds) then
+            print("[DEBUG] Button " .. i .. " pressed! Action: " .. button.action)
             -- Button pressed
             local callback = activeSession.callback
             local action = button.action
@@ -446,16 +460,21 @@ function monitor_ui.handleTouch(x, y)
             
             -- Call callback
             if callback then
+                print("[DEBUG] Calling callback with action: " .. tostring(action))
                 if action == "cancel" then
                     callback(nil)
                 else
                     callback(action)
                 end
+            else
+                print("[DEBUG] No callback set!")
             end
             
             return
         end
     end
+    
+    print("[DEBUG] Touch outside all buttons")
 end
 
 --- Handle timer events for clearing screens
@@ -476,13 +495,20 @@ function monitor_ui.startTouchListener(tac)
     
     -- Register as background process
     tac.registerBackgroundProcess("monitor_ui_touch", function()
+        print("[DEBUG] Monitor UI touch listener started")
+        print("[DEBUG] Monitoring touches on: " .. tostring(activeMonitorSide))
         while touchListener do
             local event, side, x, y = os.pullEvent()
             
             if event == "monitor_touch" then
-                -- Check if touch is on our monitor
-                if activeMonitor and peripheral.wrap(side) == activeMonitor then
+                print("[DEBUG] monitor_touch event received on " .. side)
+                print("[DEBUG] Our monitor side: " .. tostring(activeMonitorSide))
+                -- Check if touch is on our monitor by comparing peripheral names
+                if activeMonitorSide and side == activeMonitorSide then
+                    print("[DEBUG] Touch is on our monitor, handling...")
                     monitor_ui.handleTouch(x, y)
+                else
+                    print("[DEBUG] Touch is on different monitor (expected: " .. tostring(activeMonitorSide) .. ", got: " .. side .. ")")
                 end
             elseif event == "timer" then
                 -- Handle timer events for clearing screens

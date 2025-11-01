@@ -54,7 +54,14 @@ end
 -- @param tac table - TAC instance
 function shop_handler.resumePendingWrites(tac)
     local pendingWrite = nfcWriteState.get("active")
-    if not pendingWrite then return end
+    
+    print("[DEBUG] Checking for pending writes...")
+    if not pendingWrite then 
+        print("[DEBUG] No pending writes found")
+        return 
+    end
+    
+    print("[DEBUG] Found pending write of type: " .. tostring(pendingWrite.type))
     
     term.setTextColor(colors.cyan)
     print("=== Resuming Pending NFC Write ===")
@@ -98,9 +105,6 @@ function shop_handler.startShop(tac)
     local ACCESS_CONFIG = config.get()
     local shopk = require("lib.shopk")
     
-    -- Check for pending NFC writes and resume them
-    shop_handler.resumePendingWrites(tac)
-    
     -- Build shop configuration
     local shopConfig = {
         privatekey = ACCESS_CONFIG.private_key
@@ -138,6 +142,9 @@ function shop_handler.startShop(tac)
                 term.setTextColor(colors.lime)
                 print("ShopK is now running!")
                 term.setTextColor(colors.white)
+                
+                -- Resume any pending NFC writes now that shop is connected
+                shop_handler.resumePendingWrites(tac)
             else
                 term.setTextColor(colors.red)
                 print("Failed to get shop address: " .. tostring(data.error))
