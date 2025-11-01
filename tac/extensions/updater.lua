@@ -203,21 +203,57 @@ function UpdaterExtension.init(tac)
             end
         end
     end
+    
+    -- Also check for NEW libraries that aren't installed yet
+    if updater.getLibraries and updater.listInstalled then
+        local ok, err = pcall(function()
+            local allLibs = updater.getLibraries()
+            local installed = updater.listInstalled()
+            
+            if not allLibs or not allLibs.libraries then return end
+            
+            -- Build set of installed library names
+            local installedNames = {}
+            for _, lib in ipairs(installed) do
+                installedNames[lib.name] = true
+            end
+            
+            -- Find new libraries
+            local newLibs = {}
+            for _, lib in ipairs(allLibs.libraries) do
+                if not installedNames[lib.name] then
+                    table.insert(newLibs, lib.name)
+                end
+            end
+            
+            if #newLibs > 0 then
+                term.setTextColor(colors.cyan)
+                print("TAC Updater: New libraries available:")
+                for _, name in ipairs(newLibs) do
+                    print("- " .. name)
+                end
+                print("Run 'updater install <name>' to install.")
+                term.setTextColor(colors.white)
+            end
+        end)
+    end
 
     --- Register the updater command
     --
-    -- Provides two subcommands:
+    -- Provides subcommands:
     -- - check: Check for available updates without applying them
     -- - update: Update all libraries to their latest versions
+    -- - install: Install a new library
     --
     -- @command updater
     -- @subcommand check Check for available updates
     -- @subcommand update Update all libraries
+    -- @subcommand install Install a new library
     tac.registerCommand("updater", {
         description = "Update TAC core, extensions, and libraries",
         complete = function(args)
             if #args == 1 then
-                return {"check", "update", "update-libs", "update-core", "update-extension"}
+                return {"check", "update", "update-libs", "update-core", "update-extension", "install", "list"}
             elseif #args == 2 and args[1] == "update-extension" then
                 -- Autocomplete extension names
                 local extensions = {}
@@ -225,6 +261,16 @@ function UpdaterExtension.init(tac)
                     table.insert(extensions, name)
                 end
                 return extensions
+            elseif #args == 2 and args[1] == "install" then
+                -- Autocomplete available library names
+                local ok, allLibs = pcall(updater.getLibraries)
+                if ok and allLibs and allLibs.libraries then
+                    local libNames = {}
+                    for _, lib in ipairs(allLibs.libraries) do
+                        table.insert(libNames, lib.name)
+                    end
+                    return libNames
+                end
             end
             return {}
         end,
@@ -309,24 +355,63 @@ function UpdaterExtension.init(tac)
                     end
                 end
                 
-                if #updates == 0 then
+                -- Check for NEW libraries
+                local newLibs = {}
+                local ok2, allLibs = pcall(updater.getLibraries)
+                if ok2 and allLibs and allLibs.libraries then
+                    local installed = updater.listInstalled()
+                    local installedNames = {}
+                    for _, lib in ipairs(installed) do
+                        installedNames[lib.name] = true
+                    end
+                    
+                    for _, lib in ipairs(allLibs.libraries) do
+                        if not installedNames[lib.name] then
+                            table.insert(newLibs, {
+                                type = "new-library",
+                                name = lib.name,
+                                version = lib.version
+                            })
+                        end
+                    end
+                end
+                
+                if #updates == 0 and #newLibs == 0 then
                     d.mess("Everything is up to date!")
                 else
-                    d.mess("Updates available:")
-                    for _, update in ipairs(updates) do
-                        term.setTextColor(colors.yellow)
-                        term.write("  " .. update.name)
-                        term.setTextColor(colors.white)
-                        term.write(": ")
-                        term.setTextColor(colors.red)
-                        term.write(update.current or "?")
-                        term.setTextColor(colors.white)
-                        term.write(" -> ")
-                        term.setTextColor(colors.lime)
-                        print(update.latest or "?")
-                        term.setTextColor(colors.white)
+                    if #updates > 0 then
+                        d.mess("Updates available:")
+                        for _, update in ipairs(updates) do
+                            term.setTextColor(colors.yellow)
+                            term.write("  " .. update.name)
+                            term.setTextColor(colors.white)
+                            term.write(": ")
+                            term.setTextColor(colors.red)
+                            term.write(update.current or "?")
+                            term.setTextColor(colors.white)
+                            term.write(" -> ")
+                            term.setTextColor(colors.lime)
+                            print(update.latest or "?")
+                            term.setTextColor(colors.white)
+                        end
+                        d.mess("Run 'updater update' to update all, or use specific commands.")
                     end
-                    d.mess("Run 'updater update' to update all, or use specific commands.")
+                    
+                    if #newLibs > 0 then
+                        term.setTextColor(colors.cyan)
+                        print("\nNew libraries available:")
+                        term.setTextColor(colors.white)
+                        for _, lib in ipairs(newLibs) do
+                            term.setTextColor(colors.cyan)
+                            term.write("  " .. lib.name)
+                            term.setTextColor(colors.white)
+                            term.write(" ")
+                            term.setTextColor(colors.lime)
+                            print("v" .. (lib.version or "?"))
+                            term.setTextColor(colors.white)
+                        end
+                        d.mess("Run 'updater install <name>' to install.")
+                    end
                 end
                 
             elseif cmd == "update" then
@@ -487,6 +572,66 @@ function UpdaterExtension.init(tac)
                 
                 d.mess("Extension updated! Restart to apply changes.")
                 
+            elseif cmd == "install" then
+                local libName = args[2]
+                if not libName then
+                    d.err("Usage: updater install <library-name>")
+                    return
+                end
+                
+                d.mess("Installing library: " .. libName)
+                local ok, err = pcall(function()
+                    local success = updater.install(libName, false)
+                    if not success then
+                        d.err("Installation failed")
+                    end
+                end)
+                if not ok then
+                    d.err("Install error: " .. tostring(err))
+                end
+                
+            elseif cmd == "list" then
+                d.mess("Checking available and installed libraries...")
+                
+                local ok, allLibs = pcall(updater.getLibraries)
+                if not ok or not allLibs or not allLibs.libraries then
+                    d.err("Failed to fetch library list")
+                    return
+                end
+                
+                local installed = updater.listInstalled()
+                local installedNames = {}
+                for _, lib in ipairs(installed) do
+                    installedNames[lib.name] = {version = lib.version, path = lib.path}
+                end
+                
+                d.mess("\nAvailable libraries:")
+                for _, lib in ipairs(allLibs.libraries) do
+                    local installedInfo = installedNames[lib.name]
+                    if installedInfo then
+                        term.setTextColor(colors.lime)
+                        term.write("  [INSTALLED] ")
+                        term.setTextColor(colors.white)
+                        term.write(lib.name)
+                        term.write(" v")
+                        term.write(installedInfo.version or "?")
+                        if compareVersions(installedInfo.version, lib.version) then
+                            term.setTextColor(colors.yellow)
+                            term.write(" -> v" .. lib.version .. " available")
+                        end
+                        print()
+                        term.setTextColor(colors.white)
+                    else
+                        term.setTextColor(colors.cyan)
+                        term.write("  [NEW] ")
+                        term.setTextColor(colors.white)
+                        term.write(lib.name)
+                        term.write(" v" .. (lib.version or "?"))
+                        print()
+                    end
+                end
+                term.setTextColor(colors.white)
+                
             elseif cmd == "help" then
                 d.mess("TAC Updater Commands:")
                 d.mess("  check              - Check for available updates")
@@ -494,6 +639,8 @@ function UpdaterExtension.init(tac)
                 d.mess("  update-libs        - Update only libraries")
                 d.mess("  update-core        - Update only TAC core")
                 d.mess("  update-extension <name> - Update specific extension")
+                d.mess("  install <name>     - Install a new library")
+                d.mess("  list               - List all available libraries")
                 d.mess("")
                 d.mess("Options:")
                 d.mess("  --force            - Force update even if files are modified")
@@ -501,7 +648,7 @@ function UpdaterExtension.init(tac)
                 d.mess("Note: Modified files are skipped by default to preserve changes.")
                 d.mess("Use --force to override this protection.")
             else
-                d.err("Unknown command! Use: check, update, update-libs, update-core, update-extension, help")
+                d.err("Unknown command! Use: check, update, update-libs, update-core, update-extension, install, list, help")
             end
         end
     })
