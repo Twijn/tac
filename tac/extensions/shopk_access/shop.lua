@@ -1010,9 +1010,11 @@ function shop_handler.sendRefund(toAddress, amount, reason, callback)
     end
     
     -- Send the refund transaction with error metadata
-    shop.makeTransaction(toAddress, amount, {
+    shop.send({
+        to = toAddress,
+        amount = amount,
         refund = "true",
-        error = reason or "Subscription refund"
+        meta = string.format("error=%s", reason or "Subscription refund")
     }, function(data)
         if data.ok then
             term.setTextColor(colors.green)
