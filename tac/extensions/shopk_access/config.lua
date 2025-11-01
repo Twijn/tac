@@ -91,9 +91,12 @@ end
 --- Set a configuration value
 -- @param key string - configuration key
 -- @param value any - configuration value
-function config.set(key, value)
+-- @param tac table|nil - TAC instance (optional, to save settings)
+function config.set(key, value, tac)
     SUBSCRIPTION_CONFIG[key] = value
-    config.save()
+    if tac then
+        tac.settings.set("shopk_subscription_config", SUBSCRIPTION_CONFIG)
+    end
 end
 
 --- Load configuration from TAC settings
