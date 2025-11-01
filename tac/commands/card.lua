@@ -23,7 +23,7 @@ function CardCommand.create(tac)
             return {}
         end,
         execute = function(args, d)
-            local cmdName = (args[1] or ""):lower()
+            local cmdName = (args[1] or "list"):lower()
 
             if cmdName == "grant" then
                 local data = SecurityCore.randomString(128)
