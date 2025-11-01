@@ -167,9 +167,13 @@ function monitor_ui.showRenewalChoice(data, callback)
     activeMonitor.write("Player: " .. data.username)
     
     activeMonitor.setCursorPos(2, 4)
-    activeMonitor.write("Access: " .. data.accessTag)
+    activeMonitor.setTextColor(colors.yellow)
+    activeMonitor.write("Access Tag: ")
+    activeMonitor.setTextColor(colors.white)
+    activeMonitor.write(data.accessTag)
     
     activeMonitor.setCursorPos(2, 5)
+    activeMonitor.setTextColor(colors.cyan)
     activeMonitor.write("Duration: " .. data.tier.duration .. " days")
     
     activeMonitor.setCursorPos(2, 6)
@@ -239,9 +243,13 @@ function monitor_ui.showPurchaseChoice(data, callback)
     activeMonitor.write("Player: " .. data.username)
     
     activeMonitor.setCursorPos(2, 4)
-    activeMonitor.write("Access: " .. data.slot)
+    activeMonitor.setTextColor(colors.yellow)
+    activeMonitor.write("Access Tag: ")
+    activeMonitor.setTextColor(colors.white)
+    activeMonitor.write(data.slot)
     
     activeMonitor.setCursorPos(2, 5)
+    activeMonitor.setTextColor(colors.cyan)
     activeMonitor.write("Duration: " .. data.tier.duration .. " days")
     
     activeMonitor.setCursorPos(2, 6)
