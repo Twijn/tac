@@ -6,7 +6,7 @@
     
     @module tac.lib.interactive_list
     @author Twijn
-    @version 1.0.2
+    @version 1.0.3
     
     @example
     local interactiveList = require("tac.lib.interactive_list")
@@ -134,9 +134,9 @@ function interactiveList.show(options)
                 print(string.rep("-", w))
                 term.setTextColor(colors.lightGray)
                 if allowMultiSelect then
-                    print("Up/Down: Navigate | Space: Select | Right: Details | Enter: Confirm | Q: Cancel")
+                    print("Arrows/PgUp/PgDn/Home/End: Navigate | Space: Select | Enter: Confirm | Q: Cancel")
                 else
-                    print("Up/Down: Navigate | Right: Details | Enter: Select | Q: Cancel")
+                    print("Arrows/PgUp/PgDn/Home/End: Navigate | Right: Details | Enter: Select | Q: Cancel")
                 end
             end
             
@@ -215,7 +215,7 @@ function interactiveList.show(options)
             term.setTextColor(colors.gray)
             print(string.rep("-", w))
             term.setTextColor(colors.lightGray)
-            print("Up/Down: Scroll | Left: Back to list | Q: Cancel")
+            print("Arrows/PgUp/PgDn/Home/End: Scroll | Left: Back to list | Q: Cancel")
         end
         
         term.setTextColor(colors.white)
@@ -258,6 +258,69 @@ function interactiveList.show(options)
                 end
             elseif selectedIndex < #items then
                 selectedIndex = selectedIndex + 1
+            end
+        elseif key == keys.pageUp then
+            if showingDetails then
+                -- Scroll details up by page
+                local _, h = getScreenDimensions()
+                local maxVisibleDetails = h - 5
+                detailsScrollOffset = math.max(0, detailsScrollOffset - maxVisibleDetails)
+            else
+                -- Jump up by page in list
+                local maxVisible = getMaxVisibleItems()
+                selectedIndex = math.max(1, selectedIndex - maxVisible)
+            end
+        elseif key == keys.pageDown then
+            if showingDetails then
+                -- Scroll details down by page
+                local item = items[selectedIndex]
+                local detailLines = {}
+                if formatDetails then
+                    local details = formatDetails(item)
+                    if type(details) == "table" then
+                        detailLines = details
+                    else
+                        detailLines = {tostring(details)}
+                    end
+                end
+                
+                local _, h = getScreenDimensions()
+                local maxVisibleDetails = h - 5
+                local maxScroll = math.max(0, #detailLines - maxVisibleDetails)
+                detailsScrollOffset = math.min(maxScroll, detailsScrollOffset + maxVisibleDetails)
+            else
+                -- Jump down by page in list
+                local maxVisible = getMaxVisibleItems()
+                selectedIndex = math.min(#items, selectedIndex + maxVisible)
+            end
+        elseif key == keys.home then
+            if showingDetails then
+                -- Jump to top of details
+                detailsScrollOffset = 0
+            else
+                -- Jump to first item
+                selectedIndex = 1
+            end
+        elseif key == keys["end"] then
+            if showingDetails then
+                -- Jump to bottom of details
+                local item = items[selectedIndex]
+                local detailLines = {}
+                if formatDetails then
+                    local details = formatDetails(item)
+                    if type(details) == "table" then
+                        detailLines = details
+                    else
+                        detailLines = {tostring(details)}
+                    end
+                end
+                
+                local _, h = getScreenDimensions()
+                local maxVisibleDetails = h - 5
+                detailsScrollOffset = math.max(0, #detailLines - maxVisibleDetails)
+            else
+                -- Jump to last item
+                selectedIndex = #items
             end
         elseif key == keys.right then
             if not showingDetails and formatDetails then
