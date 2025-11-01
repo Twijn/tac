@@ -8,6 +8,7 @@
     @author Twijn
 ]]
 
+local tables = require("lib.tables")
 local config = {}
 
 -- Default configuration for subscription sales (wildcard-based)
@@ -74,28 +75,15 @@ local DEFAULT_CONFIG = {
 -- Current configuration (starts with defaults)
 local SUBSCRIPTION_CONFIG = {}
 
--- Deep copy function for nested tables
-local function deepCopy(original)
-    local copy = {}
-    for k, v in pairs(original) do
-        if type(v) == "table" then
-            copy[k] = deepCopy(v)
-        else
-            copy[k] = v
-        end
-    end
-    return copy
-end
-
 -- Initialize with deep copy of defaults
-SUBSCRIPTION_CONFIG = deepCopy(DEFAULT_CONFIG)
+SUBSCRIPTION_CONFIG = tables.recursiveCopy(DEFAULT_CONFIG)
 
 --- Get the current configuration
 -- @return table - current SUBSCRIPTION_CONFIG
 function config.get()
     -- Ensure subscription_tiers exists
     if not SUBSCRIPTION_CONFIG.subscription_tiers then
-        SUBSCRIPTION_CONFIG.subscription_tiers = deepCopy(DEFAULT_CONFIG.subscription_tiers)
+        SUBSCRIPTION_CONFIG.subscription_tiers = tables.recursiveCopy(DEFAULT_CONFIG.subscription_tiers)
     end
     return SUBSCRIPTION_CONFIG
 end
@@ -105,6 +93,7 @@ end
 -- @param value any - configuration value
 function config.set(key, value)
     SUBSCRIPTION_CONFIG[key] = value
+    config.save()
 end
 
 --- Load configuration from TAC settings
@@ -112,16 +101,23 @@ end
 function config.load(tac)
     local saved = tac.settings.get("shopk_subscription_config")
     if saved then
-        SUBSCRIPTION_CONFIG = saved
+        -- Clear existing config and copy saved values
+        -- This maintains the table reference so other modules see the update
+        for k in pairs(SUBSCRIPTION_CONFIG) do
+            SUBSCRIPTION_CONFIG[k] = nil
+        end
+        for k, v in pairs(saved) do
+            SUBSCRIPTION_CONFIG[k] = v
+        end
         print("Loaded ShopK subscription configuration from settings")
         
         -- Ensure critical fields exist
         if not SUBSCRIPTION_CONFIG.subscription_tiers then
-            SUBSCRIPTION_CONFIG.subscription_tiers = deepCopy(DEFAULT_CONFIG.subscription_tiers)
+            SUBSCRIPTION_CONFIG.subscription_tiers = tables.recursiveCopy(DEFAULT_CONFIG.subscription_tiers)
             print("Restored missing subscription_tiers from defaults")
         end
         if not SUBSCRIPTION_CONFIG.refund_settings then
-            SUBSCRIPTION_CONFIG.refund_settings = deepCopy(DEFAULT_CONFIG.refund_settings)
+            SUBSCRIPTION_CONFIG.refund_settings = tables.recursiveCopy(DEFAULT_CONFIG.refund_settings)
             print("Restored missing refund_settings from defaults")
         end
     end
@@ -209,7 +205,14 @@ end
 
 --- Reset configuration to defaults
 function config.reset()
-    SUBSCRIPTION_CONFIG = deepCopy(DEFAULT_CONFIG)
+    -- Clear and repopulate to maintain table reference
+    for k in pairs(SUBSCRIPTION_CONFIG) do
+        SUBSCRIPTION_CONFIG[k] = nil
+    end
+    local defaults = tables.recursiveCopy(DEFAULT_CONFIG)
+    for k, v in pairs(defaults) do
+        SUBSCRIPTION_CONFIG[k] = v
+    end
 end
 
 --- Create a new tier with validation
