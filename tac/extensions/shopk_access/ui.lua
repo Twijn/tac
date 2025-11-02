@@ -48,14 +48,11 @@ function ui.showConfigForm(tac, d)
     
     if result then
         -- Update private key
-        config.set("private_key", result["Private Key"])
+        config.set("private_key", result["Private Key"], tac)
         
         -- Update tier configurations (results are in order of form fields)
         -- Note: This is a simplified approach for single tier setups
         -- For multiple tiers, individual tier editing is recommended
-        
-        -- Save configuration
-        config.save(tac)
         
         d.mess("Configuration saved!")
         

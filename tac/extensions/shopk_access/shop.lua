@@ -135,8 +135,7 @@ function shop_handler.startShop(tac)
         -- Get shop address after connection is established
         shop.me(function(data)
             if data.ok then
-                config.set("shop_address", data.address.address)
-                config.save(tac)
+                config.set("shop_address", data.address.address, tac)
                 term.setTextColor(colors.cyan)
                 print("Shop address: " .. data.address.address)
                 term.setTextColor(colors.lime)
@@ -1033,7 +1032,7 @@ end
 --- Check if shop is running and can send refunds
 -- @return boolean - true if shop can send refunds
 function shop_handler.canSendRefunds()
-    return shop ~= nil and shop.makeTransaction ~= nil
+    return shop ~= nil and shop.send ~= nil
 end
 
 return shop_handler
