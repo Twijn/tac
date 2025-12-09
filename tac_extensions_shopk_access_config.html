@@ -163,25 +163,26 @@
     <h2>Functions</h2>
     <div class='function'>
         <h3><code>config.get()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L93' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L81' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Get the current configuration</p>
         <div class='returns'><strong>Returns:</strong> table - current SUBSCRIPTION_CONFIG</div>
     </div>
     <div class='function'>
-        <h3><code>config.set(key, value)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L103' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <h3><code>config.set(key, value, tac)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L91' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Set a configuration value</p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
                 <li><code>key</code> (string): - configuration key</li>
                 <li><code>value</code> (any): - configuration value</li>
+                <li><code>tac</code> (table|nil): - TAC instance (optional, to save settings)</li>
             </ul>
         </div>
     </div>
     <div class='function'>
         <h3><code>config.load(tac)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L110' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L102' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Load configuration from TAC settings</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -192,7 +193,7 @@
     </div>
     <div class='function'>
         <h3><code>config.save(tac)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L150' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L149' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Save configuration to TAC settings</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -203,7 +204,7 @@
     </div>
     <div class='function'>
         <h3><code>config.addTier(pattern, tierData)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L159' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L158' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Add a new subscription tier</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -216,7 +217,7 @@
     </div>
     <div class='function'>
         <h3><code>config.removeTier(pattern)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L172' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L171' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Remove a subscription tier</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -228,7 +229,7 @@
     </div>
     <div class='function'>
         <h3><code>config.getTier(pattern)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L184' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L183' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Get a tier configuration</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -240,13 +241,13 @@
     </div>
     <div class='function'>
         <h3><code>config.getAllTiers()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L191' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L190' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Get all tiers</p>
         <div class='returns'><strong>Returns:</strong> table - all tier configurations</div>
     </div>
     <div class='function'>
         <h3><code>config.findTierForTag(tag)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L197' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L196' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Find tier matching a specific tag</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -258,12 +259,12 @@
     </div>
     <div class='function'>
         <h3><code>config.reset()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L210' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L209' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Reset configuration to defaults</p>
     </div>
     <div class='function'>
         <h3><code>config.createTier(pattern, options)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L215' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/config.lua#L221' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Create a new tier with validation</p>
         <div class='params'>
             <strong>Parameters:</strong>

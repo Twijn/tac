@@ -35,7 +35,7 @@
     },
     "lib": {
       "interactive_list": {
-        "version": "1.0.2",
+        "version": "1.0.3",
         "path": "tac/lib/interactive_list.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/lib/interactive_list.lua"
       },
@@ -84,7 +84,7 @@
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shop_monitor.lua"
       },
       "shopk_access": {
-        "version": "1.4.2",
+        "version": "1.4.4",
         "path": "tac/extensions/shopk_access.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/extensions/shopk_access.lua"
       },
