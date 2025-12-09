@@ -13,10 +13,7 @@
     -- This extension is loaded automatically by TAC.
     -- Configure in TAC shell:
     
-    -- > monitor config monitor_side top
-    -- > monitor config display_title "ACCESS SHOP"
-    -- > monitor start
-    -- > monitor stop
+    -- > monitor config
     
     -- From another extension:
     function MyExtension.init(tac)
@@ -482,7 +479,7 @@ function ShopMonitorExtension.init(tac)
         description = "Configure and manage shop monitor display",
         complete = function(args)
             if #args > 0 then
-                return {"config", "start", "stop", "update", "debug"}
+                return {"config", "update", "debug"}
             end
             return {}
         end,

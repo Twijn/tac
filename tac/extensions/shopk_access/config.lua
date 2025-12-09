@@ -56,7 +56,7 @@ local DEFAULT_CONFIG = {
     
     -- Refund settings
     refund_settings = {
-        min_refund_amount = 50,      -- Minimum refund amount (to avoid tiny refunds)
+        min_refund_amount = .5,      -- Minimum refund amount (to avoid tiny refunds)
         refund_fee_percent = 5,      -- 5% processing fee for refunds
         grace_period_hours = 24,     -- Full refund within 24 hours
         prorated_minimum_days = 3    -- Minimum days to charge for prorated refunds
