@@ -59,6 +59,12 @@ MONITOR_CONFIG = {
 local monitor = nil
 local updateTimer = nil
 
+-- Helper: honor monitor_ui lock so we don't overwrite interactive flows
+local function monitorIsLocked(tac)
+    local monitor_ui = tac.extensions.shopk_access and tac.extensions.shopk_access.monitor_ui
+    return monitor_ui and monitor_ui.isInUse and monitor_ui.isInUse()
+end
+
 --- Get shop data for display (using shared utility)
 -- @param tac table - TAC instance
 -- @return table - shop data
@@ -86,6 +92,11 @@ end
 -- @param tac table - TAC instance
 local function updateMonitorDisplay(tac)
     if not monitor then return end
+
+    if monitorIsLocked(tac) then
+        -- Skip drawing while another flow holds the monitor
+        return
+    end
     
     local shopData = getShopData(tac)
     
@@ -307,14 +318,21 @@ local function showConfig(tac, d)
         MONITOR_CONFIG.text_color = tonumber(result["Text Color"]) or colors.white
         MONITOR_CONFIG.background_color = tonumber(result["Background Color"]) or colors.black
         
-        -- Save configuration
+        -- Save configuration (both combined config and individual keys for persistence)
         tac.settings.set("shop_monitor_config", MONITOR_CONFIG)
+        tac.settings.set("shop_monitor_side", MONITOR_CONFIG.monitor_side)
+        tac.settings.set("shop_monitor_title", MONITOR_CONFIG.display_title)
+        tac.settings.set("shop_monitor_header", MONITOR_CONFIG.available_header)
         
         -- Initialize monitor
         monitor = peripheral.wrap(MONITOR_CONFIG.monitor_side)
         if monitor then
             d.mess("Monitor configured: " .. MONITOR_CONFIG.monitor_side)
-            startMonitorUpdates(tac)
+            if monitorIsLocked(tac) then
+                d.mess("Monitor is currently in use; skipping immediate update")
+            else
+                startMonitorUpdates(tac)
+            end
         else
             d.err("Failed to connect to monitor: " .. MONITOR_CONFIG.monitor_side)
         end
@@ -398,7 +416,9 @@ function ShopMonitorExtension.init(tac)
             if peripheral.getType(side) == "monitor" then
                 MONITOR_CONFIG.monitor_side = side
                 monitor = peripheral.wrap(side)
+                -- Save both combined config and individual keys for persistence
                 tac.settings.set("shop_monitor_config", MONITOR_CONFIG)
+                tac.settings.set("shop_monitor_side", side)
                 print("Monitor auto-configured: " .. side)
                 break
             end
@@ -450,6 +470,9 @@ function ShopMonitorExtension.init(tac)
                             if currentMonitor then
                                 MONITOR_CONFIG.monitor_side = side
                                 monitor = currentMonitor
+                                -- Persist the auto-detected monitor
+                                tac.settings.set("shop_monitor_config", MONITOR_CONFIG)
+                                tac.settings.set("shop_monitor_side", side)
                                 print("Monitor: Auto-detected " .. side)
                                 break
                             end
@@ -505,6 +528,9 @@ function ShopMonitorExtension.init(tac)
                             if foundMonitor then
                                 MONITOR_CONFIG.monitor_side = side
                                 monitor = foundMonitor
+                                -- Persist the auto-detected monitor
+                                tac.settings.set("shop_monitor_config", MONITOR_CONFIG)
+                                tac.settings.set("shop_monitor_side", side)
                                 d.mess("Auto-detected monitor on " .. side)
                                 break
                             end
@@ -514,8 +540,12 @@ function ShopMonitorExtension.init(tac)
                 
                 if foundMonitor then
                     monitor = foundMonitor
-                    updateMonitorDisplay(tac)
-                    d.mess("Monitor display updated successfully!")
+                    if monitorIsLocked(tac) then
+                        d.mess("Monitor is currently in use; skipping update")
+                    else
+                        updateMonitorDisplay(tac)
+                        d.mess("Monitor display updated successfully!")
+                    end
                 else
                     d.err("No monitor connected! Available peripherals:")
                     for _, side in ipairs(peripheral.getNames()) do

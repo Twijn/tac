@@ -16,6 +16,11 @@ local activeMonitorSide = nil  -- Store the monitor's peripheral name
 local activeSession = nil
 local touchListener = nil
 local isInUse = false  -- Flag to indicate if monitor is showing interactive UI
+local lockOwners = {}  -- Track who is holding the monitor lock
+local DEFAULT_LOCK_OWNER = "__default"
+local function updateLockState()
+    isInUse = next(lockOwners) ~= nil
+end
 local clearTimer = nil  -- Timer for clearing success/error screens
 
 --- Check if monitor is currently in use (showing interactive UI)
@@ -26,14 +31,23 @@ end
 
 --- Lock the monitor (set isInUse flag) to prevent shop_monitor updates
 -- This should be called at the start of a transaction flow
-function monitor_ui.lock()
-    isInUse = true
+function monitor_ui.lock(owner)
+    local key = owner or DEFAULT_LOCK_OWNER
+    lockOwners[key] = (lockOwners[key] or 0) + 1
+    updateLockState()
 end
 
 --- Unlock the monitor (clear isInUse flag) to allow shop_monitor updates
 -- Note: clearSession() also unlocks
-function monitor_ui.unlock()
-    isInUse = false
+function monitor_ui.unlock(owner)
+    local key = owner or DEFAULT_LOCK_OWNER
+    if lockOwners[key] then
+        lockOwners[key] = lockOwners[key] - 1
+        if lockOwners[key] <= 0 then
+            lockOwners[key] = nil
+        end
+    end
+    updateLockState()
 end
 
 --- Initialize monitor UI
@@ -147,7 +161,7 @@ function monitor_ui.showRenewalChoice(data, callback)
         return false
     end
     
-    isInUse = true  -- Mark monitor as in use
+    monitor_ui.lock()  -- Mark monitor as in use
     activeMonitor.setBackgroundColor(colors.black)
     activeMonitor.clear()
     
@@ -223,7 +237,7 @@ function monitor_ui.showPurchaseChoice(data, callback)
         return false
     end
     
-    isInUse = true  -- Mark monitor as in use
+    monitor_ui.lock()  -- Mark monitor as in use
     activeMonitor.setBackgroundColor(colors.black)
     activeMonitor.clear()
     
@@ -287,7 +301,7 @@ end
 function monitor_ui.showNFCWriting(data)
     if not activeMonitor then return end
     
-    isInUse = true  -- Keep monitor marked as in use during NFC writing
+    monitor_ui.lock()  -- Keep monitor marked as in use during NFC writing
     activeMonitor.setBackgroundColor(colors.black)
     activeMonitor.clear()
     
@@ -335,7 +349,7 @@ end
 function monitor_ui.showSuccess(message, details)
     if not activeMonitor then return end
     
-    isInUse = true  -- Keep monitor locked during success screen
+    monitor_ui.lock()  -- Keep monitor locked during success screen
     
     activeMonitor.setBackgroundColor(colors.black)
     activeMonitor.clear()
@@ -383,7 +397,7 @@ end
 function monitor_ui.showError(message)
     if not activeMonitor then return end
     
-    isInUse = true  -- Keep monitor locked during error screen
+    monitor_ui.lock()  -- Keep monitor locked during error screen
     
     activeMonitor.setBackgroundColor(colors.black)
     activeMonitor.clear()
@@ -534,7 +548,7 @@ end
 --- Clear active session and return to default screen
 function monitor_ui.clearSession()
     activeSession = nil
-    isInUse = false  -- Reset the in-use flag
+    monitor_ui.unlock()  -- Reset the in-use flag
     showDefaultScreen()
 end
 

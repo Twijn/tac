@@ -380,6 +380,46 @@ local function create(tacInstance)
         return existingIdentity, nil
     end
 
+    --- Set RFID data for an identity
+    --
+    -- Associates RFID badge data with an identity. Useful when reprogramming RFID cards
+    -- using the server writer.
+    --
+    ---@param identityId string ID of the identity
+    ---@param rfidData string The RFID badge data
+    ---@return table|nil Updated identity data if successful, nil on error
+    ---@return string|nil Error message if update failed
+    function identityManager.setRfidData(identityId, rfidData)
+        local existingIdentity = tac.identities.get(identityId)
+        if not existingIdentity then
+            return nil, "Identity not found: " .. identityId
+        end
+        
+        if not existingIdentity.rfidEnabled then
+            return nil, "RFID is not enabled for this identity"
+        end
+        
+        -- Remove old lookup if exists
+        if existingIdentity.rfidData then
+            tac.identityLookup.unset("rfid:" .. existingIdentity.rfidData)
+        end
+        
+        -- Set new RFID data
+        existingIdentity.rfidData = rfidData
+        existingIdentity.rfidRegenerated = os.epoch("utc")
+        
+        -- Save and create new lookup
+        tac.identities.set(identityId, existingIdentity)
+        tac.identityLookup.set("rfid:" .. rfidData, identityId)
+        
+        tac.logger.logAccess("rfid_data_set", {
+            identity = existingIdentity,
+            message = "RFID data set for " .. existingIdentity.name
+        })
+        
+        return existingIdentity, nil
+    end
+
     --- Look up identity by NFC data
     --
     ---@param nfcData string The NFC card data

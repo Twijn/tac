@@ -558,21 +558,38 @@ end
 function HardwareManager.showAccessDenied(door, reason)
     reason = reason or "ACCESS DENIED"
     
-    -- Handle sign
-    if door and door.sign then
-        -- Flash red warning message
+    local hasSign = door and door.sign
+    local hasMonitor = door and door.monitor
+    
+    -- Run sign and monitor animations in parallel
+    if hasSign and hasMonitor then
+        parallel.waitForAll(
+            function()
+                -- Sign animation
+                for i = 1, 3 do
+                    peripheral.call(door.sign, "setSignText", "XXXXXXXXXXXXX", reason, "XXXXXXXXXXXXX", "")
+                    sleep(0.5)
+                    peripheral.call(door.sign, "setSignText", "", "", "", "")
+                    sleep(0.3)
+                end
+                HardwareManager.updateDoorSign(door)
+            end,
+            function()
+                -- Monitor animation
+                HardwareManager.showAccessDeniedMonitor(door, reason)
+            end
+        )
+    elseif hasSign then
+        -- Handle sign only
         for i = 1, 3 do
             peripheral.call(door.sign, "setSignText", "XXXXXXXXXXXXX", reason, "XXXXXXXXXXXXX", "")
             sleep(0.5)
             peripheral.call(door.sign, "setSignText", "", "", "", "")
             sleep(0.3)
         end
-        -- Restore sign to normal state
         HardwareManager.updateDoorSign(door)
-    end
-    
-    -- Handle monitor
-    if door and door.monitor then
+    elseif hasMonitor then
+        -- Handle monitor only
         HardwareManager.showAccessDeniedMonitor(door, reason)
     end
 end
@@ -594,10 +611,22 @@ function HardwareManager.openDoorWithDisplay(door, name, openTime)
     HardwareManager.controlDoor(door, true)
 
     if name then
-        -- Prefer monitor animation if available, else use sign
-        if door.monitor then
+        local hasSign = door and door.sign
+        local hasMonitor = door and door.monitor
+        
+        -- Run sign and monitor animations in parallel
+        if hasSign and hasMonitor then
+            parallel.waitForAll(
+                function()
+                    HardwareManager.showEnterAnimation(door, name, openTime)
+                end,
+                function()
+                    HardwareManager.showEnterAnimationMonitor(door, name, openTime)
+                end
+            )
+        elseif hasMonitor then
             HardwareManager.showEnterAnimationMonitor(door, name, openTime)
-        elseif door.sign then
+        elseif hasSign then
             HardwareManager.showEnterAnimation(door, name, openTime)
         else
             sleep(openTime)

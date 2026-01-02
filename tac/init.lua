@@ -695,7 +695,7 @@ function TAC.new(config)
         
         -- Track recently processed badges to prevent spam (per door)
         local recentBadges = {}
-        local COOLDOWN_TIME = 3 -- seconds
+        local COOLDOWN_TIME = 1.5 -- seconds (reduced for faster response)
         
         -- Track currently processing badges to prevent parallel processing
         local processingBadges = {}
@@ -762,7 +762,7 @@ function TAC.new(config)
                                         message = string.format("RFID access not enabled for identity: %s", identity.name or "Unknown")
                                     })
                                     
-                                    TAC.Hardware.showAccessDenied(door, "RFID DISABLED")
+                                    -- Don't show on display for RFID - too spammy
                                     processingBadges[badgeKey] = nil
                                     goto nextBadge
                                 end
@@ -787,7 +787,7 @@ function TAC.new(config)
                                             identity.name or "Unknown", distance, identity.maxDistance)
                                     })
                                     
-                                    TAC.Hardware.showAccessDenied(door, "TOO FAR")
+                                    -- Don't show on display for RFID - too spammy
                                     processingBadges[badgeKey] = nil
                                     goto nextBadge
                                 end
@@ -811,7 +811,7 @@ function TAC.new(config)
                                             message = string.format("Identity expired: %s", identity.name or "Unknown")
                                         })
                                         
-                                        TAC.Hardware.showAccessDenied(door, "EXPIRED")
+                                        -- Don't show on display for RFID - too spammy
                                         processingBadges[badgeKey] = nil
                                         goto nextBadge
                                     end
@@ -821,7 +821,7 @@ function TAC.new(config)
                                 local hookResult, hookMessage = instance.executeHooks("beforeAccess", identity, door, data, scannerName, "rfid")
                                 
                                 if not hookResult then
-                                    TAC.Hardware.showAccessDenied(door, hookMessage or "ACCESS DENIED")
+                                    -- Don't show on display for RFID - too spammy
                                     instance.executeHooks("afterAccess", false, "hook_denied", identity, door)
                                     processingBadges[badgeKey] = nil
                                     goto nextBadge
@@ -865,7 +865,7 @@ function TAC.new(config)
                                             identity.name or "Unknown", door.name or "Unknown")
                                     })
                                     
-                                    TAC.Hardware.showAccessDenied(door, "ACCESS DENIED")
+                                    -- Don't show on display for RFID - too spammy
                                 end
 
                                 instance.executeHooks("afterAccess", granted, matchReason, identity, door)
@@ -895,7 +895,7 @@ function TAC.new(config)
                                     message = string.format("Card not authorized for RFID access (scanType: %s)", card.scanType or "none")
                                 })
                                 
-                                TAC.Hardware.showAccessDenied(door, "WRONG SCAN TYPE")
+                                -- Don't show on display for RFID - too spammy
                                 processingBadges[badgeKey] = nil
                                 goto nextBadge
                             end
@@ -904,7 +904,7 @@ function TAC.new(config)
                             local hookResult, hookMessage = instance.executeHooks("beforeAccess", card, door, data, scannerName, "rfid")
                             
                             if not hookResult then
-                                TAC.Hardware.showAccessDenied(door, hookMessage or "ACCESS DENIED")
+                                -- Don't show on display for RFID - too spammy
                                 instance.executeHooks("afterAccess", false, "hook_denied", card, door)
                             elseif not card then
                                 instance.logger.logAccess("access_denied", {
@@ -921,7 +921,7 @@ function TAC.new(config)
                                     message = string.format("Access denied: Invalid RFID badge (%s)", TAC.Security.truncateCardId(data))
                                 })
                                 
-                                TAC.Hardware.showAccessDenied(door, "INVALID BADGE")
+                                -- Don't show on display for RFID - too spammy
                                 instance.executeHooks("afterAccess", false, nil, card, door)
                             else
                                 local granted, matchReason = TAC.Security.checkAccess(card.tags, door.tags)
@@ -961,7 +961,7 @@ function TAC.new(config)
                                             card.name or "Unknown", door.name or "Unknown")
                                     })
                                     
-                                    TAC.Hardware.showAccessDenied(door, "ACCESS DENIED")
+                                    -- Don't show on display for RFID - too spammy
                                 end
 
                                 instance.executeHooks("afterAccess", granted, matchReason, card, door)
@@ -979,8 +979,452 @@ function TAC.new(config)
         end
     end
     
+    --- Server NFC monitor loop
+    -- Listens for NFC scans on the server NFC reader and displays card/identity info on the server monitor
+    -- Provides buttons to regenerate NFC/RFID credentials
+    function instance.serverNfcMonitorLoop()
+        local serverNfcName = instance.settings.get("server-nfc-reader")
+        local serverMonitorName = instance.settings.get("server-monitor")
+        
+        -- Only run if both server NFC and monitor are configured
+        if not serverNfcName or not serverMonitorName then
+            return
+        end
+        
+        local mon = peripheral.wrap(serverMonitorName)
+        if not mon then return end
+        
+        -- Load the monitor buttons library
+        local MonitorButtons = require("tac.lib.monitor_buttons")
+        local ui = MonitorButtons.create(mon)
+
+        -- Coordinate with shop monitor UI if both share the same peripheral
+        local monitor_ui = instance.extensions.shopk_access and instance.extensions.shopk_access.monitor_ui
+        local monitorLocked = false
+        local function lockMonitor()
+            if monitor_ui and monitor_ui.lock and not monitorLocked then
+                monitor_ui.lock("server_monitor")
+                monitorLocked = true
+            end
+        end
+        local function unlockMonitor()
+            if monitor_ui and monitor_ui.unlock and monitorLocked then
+                monitor_ui.unlock("server_monitor")
+                monitorLocked = false
+            end
+        end
+        
+        -- State tracking
+        local currentIdentity = nil
+        local currentCard = nil
+        local displayState = "idle"  -- idle, info, regen_slot1, regen_slot2
+        local autoHideTimer = nil
+        local countdownTimer = nil
+        local countdownSeconds = 0
+        local AUTO_HIDE_DELAY = 30  -- seconds to show info before auto-hiding
+        local REGEN_TIMEOUT = 30    -- seconds to wait for new card scan
+        local pendingNfcData = nil
+        local nfcWriteActive = false
+
+        local function cancelPendingNfcWrite()
+            if nfcWriteActive then
+                local serverNfc = peripheral.wrap(serverNfcName)
+                if serverNfc and serverNfc.cancelWrite then
+                    pcall(function()
+                        serverNfc.cancelWrite()
+                    end)
+                end
+            end
+            pendingNfcData = nil
+            nfcWriteActive = false
+        end
+        
+        -- Clear and reset to idle state
+        local function resetToIdle()
+            ui.clear()
+            ui.clearButtons()
+            currentIdentity = nil
+            currentCard = nil
+            displayState = "idle"
+            cancelPendingNfcWrite()
+            if autoHideTimer then os.cancelTimer(autoHideTimer) end
+            if countdownTimer then os.cancelTimer(countdownTimer) end
+            autoHideTimer = nil
+            countdownTimer = nil
+            unlockMonitor()
+        end
+        
+        -- Show identity/card info with action buttons
+        local function showCardInfo(identity, card, scannedSlot)
+            ui.clear()
+            ui.clearButtons()
+            lockMonitor()
+            
+            local w, h = ui.getSize()
+            local y = 1
+            
+            if identity then
+                displayState = "info"
+                currentIdentity = identity
+                currentCard = nil
+                
+                ui.drawHeader(y, "IDENTITY FOUND", MonitorButtons.COLORS.success)
+                y = y + 1
+                
+                ui.drawLine(y, "-")
+                y = y + 1
+                
+                -- Name
+                ui.centerText(y, identity.name or "Unknown", MonitorButtons.COLORS.accent)
+                y = y + 1
+                
+                -- Tags (show first few)
+                if identity.tags and #identity.tags > 0 then
+                    ui.drawText(2, y, "Tags: " .. table.concat(identity.tags, ", "), MonitorButtons.COLORS.textDim)
+                    y = y + 1
+                end
+                
+                -- Access methods
+                local methods = {}
+                if identity.nfcEnabled then table.insert(methods, "NFC") end
+                if identity.rfidEnabled then table.insert(methods, "RFID") end
+                ui.drawText(2, y, "Access: " .. table.concat(methods, ", "), MonitorButtons.COLORS.textDim)
+                y = y + 1
+
+                -- Scanned slot indicator (if known)
+                if scannedSlot then
+                    ui.drawText(2, y, "Scanned: " .. scannedSlot, MonitorButtons.COLORS.accent)
+                    y = y + 1
+                end
+
+                -- Slot occupancy
+                local slot1 = identity.nfcData and "occupied" or "empty"
+                local slot2 = identity.rfidData and "occupied" or "empty"
+                ui.drawText(2, y, "ID slot #1: " .. slot1, slot1 == "occupied" and MonitorButtons.COLORS.success or MonitorButtons.COLORS.textDim)
+                y = y + 1
+                ui.drawText(2, y, "ID slot #2: " .. slot2, slot2 == "occupied" and MonitorButtons.COLORS.success or MonitorButtons.COLORS.textDim)
+                y = y + 1
+                
+                -- Expiration
+                if identity.expiration then
+                    local now = os.epoch("utc")
+                    local remaining = identity.expiration - now
+                    local days = math.floor(remaining / (24 * 60 * 60 * 1000))
+                    
+                    if remaining <= 0 then
+                        ui.drawText(2, y, "EXPIRED", MonitorButtons.COLORS.error)
+                    elseif days <= 3 then
+                        ui.drawText(2, y, "Expires: " .. days .. " days", MonitorButtons.COLORS.warning)
+                    else
+                        ui.drawText(2, y, "Expires: " .. days .. " days", MonitorButtons.COLORS.textDim)
+                    end
+                    y = y + 1
+                end
+                
+                y = y + 1
+                
+                -- Action buttons
+                local buttonY = math.max(y, h - 5)
+                local function drawSlotButton(x, label, status, action)
+                    local width = 16
+                    local height = 3
+                    local bg = MonitorButtons.COLORS.buttonWarning
+                    local textColor = MonitorButtons.COLORS.buttonText
+                    local faded = MonitorButtons.COLORS.textDim
+
+                    local function centerLine(text, lineY, color)
+                        if not text then return end
+                        if #text > width then
+                            text = text:sub(1, width)
+                        end
+                        mon.setTextColor(color or textColor)
+                        local textX = x + math.floor((width - #text) / 2)
+                        mon.setCursorPos(textX, lineY)
+                        mon.write(text)
+                    end
+
+                    mon.setBackgroundColor(bg)
+                    for i = 0, height - 1 do
+                        mon.setCursorPos(x, buttonY + i)
+                        mon.write(string.rep(" ", width))
+                    end
+
+                    -- Main label on first line
+                    centerLine(label, buttonY, textColor)
+
+                    -- Status on third line, faded
+                    if status then
+                        centerLine("(" .. status .. ")", buttonY + 2, faded)
+                    end
+
+                    mon.setBackgroundColor(MonitorButtons.COLORS.background)
+
+                    table.insert(ui.buttons, {
+                        bounds = {x1 = x, y1 = buttonY, x2 = x + width - 1, y2 = buttonY + height - 1},
+                        action = action
+                    })
+                end
+                
+                if identity.nfcEnabled then
+                    local status = scannedSlot == "ID slot #1" and "scanned" or (slot1 == "occupied" and "occupied" or nil)
+                    drawSlotButton(2, "ID slot #1", status, "regen_slot1")
+                end
+                
+                if identity.rfidEnabled then
+                    local status = scannedSlot == "ID slot #2" and "scanned" or (slot2 == "occupied" and "occupied" or nil)
+                    drawSlotButton(20, "ID slot #2", status, "regen_slot2")
+                end
+                
+                ui.addButton(38, buttonY, 12, "Close", "close", MonitorButtons.COLORS.buttonDisabled)
+                
+                ui.drawLine(h, "=")
+                
+                -- Set auto-hide timeout
+                autoHideTimer = os.startTimer(AUTO_HIDE_DELAY)
+                
+            elseif card then
+                displayState = "info"
+                currentIdentity = nil
+                currentCard = card
+                
+                ui.drawHeader(y, "LEGACY CARD", MonitorButtons.COLORS.warning)
+                y = y + 1
+                
+                ui.drawLine(y, "-")
+                y = y + 1
+                
+                ui.centerText(y, card.name or "Unknown Card", MonitorButtons.COLORS.accent)
+                y = y + 1
+                
+                if card.tags and #card.tags > 0 then
+                    ui.drawText(2, y, "Tags: " .. table.concat(card.tags, ", "), MonitorButtons.COLORS.textDim)
+                    y = y + 1
+                end
+                
+                y = y + 1
+                ui.drawText(2, y, "Legacy cards cannot be regenerated", MonitorButtons.COLORS.textDim)
+                ui.drawText(2, y + 1, "Use 'identity create' to upgrade", MonitorButtons.COLORS.textDim)
+                
+                local buttonY = h - 4
+                ui.addButton(2, buttonY, 10, "Close", "close", MonitorButtons.COLORS.buttonDisabled)
+                
+                ui.drawLine(h, "=")
+                
+                autoHideTimer = os.startTimer(AUTO_HIDE_DELAY)
+            else
+                displayState = "info"
+                
+                ui.drawHeader(y, "UNKNOWN CARD", MonitorButtons.COLORS.error)
+                y = y + 1
+                
+                ui.drawLine(y, "-")
+                y = y + 1
+                
+                ui.centerText(y, "Card not registered", MonitorButtons.COLORS.error)
+                y = y + 1
+                
+                ui.drawText(2, y + 1, "Use 'identity create' to register", MonitorButtons.COLORS.textDim)
+                
+                local buttonY = h - 4
+                ui.addButton(2, buttonY, 10, "Close", "close", MonitorButtons.COLORS.buttonDisabled)
+                
+                ui.drawLine(h, "=")
+                
+                autoHideTimer = os.startTimer(AUTO_HIDE_DELAY)
+            end
+        end
+        
+        -- Show regeneration screen for a specific slot
+        local function showRegenSlot(slotKey, slotLabel)
+            if not currentIdentity then return end
+            
+            cancelPendingNfcWrite()
+            ui.clear()
+            ui.clearButtons()
+            displayState = slotKey
+            lockMonitor()
+            
+            local w, h = ui.getSize()
+            local serverNfc = peripheral.wrap(serverNfcName)
+
+            if not serverNfc then
+                ui.drawHeader(1, "PROGRAM " .. slotLabel, MonitorButtons.COLORS.error)
+                ui.drawLine(2, "-")
+                ui.drawText(2, 4, "Server NFC reader not available.", MonitorButtons.COLORS.error)
+                ui.drawText(2, 6, "Check wiring and settings.", MonitorButtons.COLORS.textDim)
+                local buttonY = h - 4
+                ui.addButton(2, buttonY, 10, "Close", "close", MonitorButtons.COLORS.buttonDisabled)
+                ui.drawLine(h, "=")
+                displayState = "info"
+                autoHideTimer = os.startTimer(AUTO_HIDE_DELAY)
+                return
+            end
+            
+            ui.drawHeader(1, "PROGRAM " .. slotLabel, MonitorButtons.COLORS.warning)
+            ui.drawLine(2, "-")
+            
+            ui.drawText(2, 4, "Identity: " .. (currentIdentity.name or "Unknown"), MonitorButtons.COLORS.accent)
+            ui.drawText(2, 6, "Old data for this slot will be revoked.", MonitorButtons.COLORS.text)
+            local currentStatus = (slotLabel == "ID slot #2" and currentIdentity.rfidData) or currentIdentity.nfcData
+            ui.drawText(2, 7, "Current: " .. (currentStatus and "occupied" or "empty"), currentStatus and MonitorButtons.COLORS.success or MonitorButtons.COLORS.textDim)
+            ui.drawText(2, 8, "Hold a card to write " .. slotLabel .. ".", MonitorButtons.COLORS.text)
+
+            pendingNfcData = TAC.Security.randomString(128)
+
+            local writeOk, writeErr = pcall(function()
+                serverNfc.write(pendingNfcData, (currentIdentity.name or "TAC Identity") .. " - " .. slotLabel)
+            end)
+
+            if not writeOk then
+                ui.drawText(2, 9, "Failed to start write.", MonitorButtons.COLORS.error)
+                ui.drawText(2, 10, tostring(writeErr), MonitorButtons.COLORS.error)
+                local buttonY = h - 4
+                ui.addButton(2, buttonY, 12, "Cancel", "cancel", MonitorButtons.COLORS.buttonDanger)
+                ui.drawLine(h, "=")
+                pendingNfcData = nil
+                displayState = "info"
+                autoHideTimer = os.startTimer(AUTO_HIDE_DELAY)
+                return
+            end
+
+            nfcWriteActive = true
+            
+            countdownSeconds = REGEN_TIMEOUT
+            ui.drawText(2, 10, "Waiting for write: " .. countdownSeconds .. "s", MonitorButtons.COLORS.warning)
+            
+            local buttonY = h - 4
+            ui.addButton(2, buttonY, 12, "Cancel", "cancel", MonitorButtons.COLORS.buttonDanger)
+            
+            ui.drawLine(h, "=")
+            
+            -- Start countdown
+            countdownTimer = os.startTimer(1)
+        end
+        
+        -- Handle write completion while regenerating
+        local function handleNfcRegenWrite(success, reason)
+            if (displayState ~= "regen_slot1" and displayState ~= "regen_slot2") or not currentIdentity or not pendingNfcData then return false end
+            
+            ui.clear()
+            ui.clearButtons()
+            lockMonitor()
+            
+            local w, h = ui.getSize()
+
+            local newNfcData = pendingNfcData
+            cancelPendingNfcWrite()
+            if countdownTimer then os.cancelTimer(countdownTimer) end
+            countdownTimer = nil
+
+            local slotLabel = displayState == "regen_slot2" and "ID slot #2" or "ID slot #1"
+            local setter = displayState == "regen_slot2" and instance.identityManager.setRfidData or instance.identityManager.setNfcData
+
+            if success then
+                local updated, err = setter(currentIdentity.id, newNfcData)
+
+                if updated then
+                    ui.drawHeader(1, slotLabel .. " UPDATED", MonitorButtons.COLORS.success)
+                    ui.drawLine(2, "-")
+                    
+                    ui.drawText(2, 4, "Identity: " .. (currentIdentity.name or "Unknown"), MonitorButtons.COLORS.accent)
+                    ui.drawText(2, 6, slotLabel .. " is now active!", MonitorButtons.COLORS.success)
+                    ui.drawText(2, 8, "Previous data has been revoked.", MonitorButtons.COLORS.textDim)
+                else
+                    ui.drawHeader(1, "ERROR", MonitorButtons.COLORS.error)
+                    ui.drawLine(2, "-")
+                    
+                    ui.drawText(2, 4, "Failed to update data:", MonitorButtons.COLORS.error)
+                    ui.drawText(2, 5, err or "Unknown error", MonitorButtons.COLORS.error)
+                end
+            else
+                ui.drawHeader(1, "WRITE FAILED", MonitorButtons.COLORS.error)
+                ui.drawLine(2, "-")
+
+                ui.drawText(2, 4, "Reason: " .. (reason or "unknown"), MonitorButtons.COLORS.error)
+                ui.drawText(2, 6, "Try another card and retry.", MonitorButtons.COLORS.textDim)
+            end
+            
+            local buttonY = h - 4
+            ui.addButton(2, buttonY, 10, "Done", "close", MonitorButtons.COLORS.buttonSuccess)
+            
+            ui.drawLine(h, "=")
+            
+            displayState = "info"
+            autoHideTimer = os.startTimer(AUTO_HIDE_DELAY)
+            
+            return true
+        end
+        
+        -- Main event loop
+        while true do
+            local e, p1, p2, p3 = os.pullEvent()
+            
+            if e == "nfc_data" and p1 == serverNfcName then
+                local nfcData = p2
+                
+                -- Check if we're waiting for a regen scan
+                if displayState ~= "regen_slot1" and displayState ~= "regen_slot2" then
+                    -- Normal lookup with slot detection
+                    local identityNfc = instance.identityManager.findByNfc(nfcData)
+                    local identityRfid = nil
+                    if not identityNfc then
+                        identityRfid = instance.identityManager.findByRfid(nfcData)
+                    end
+                    local identity = identityNfc or identityRfid
+                    local scannedSlot = nil
+                    if identityNfc then
+                        scannedSlot = "ID slot #1"
+                    elseif identityRfid then
+                        scannedSlot = "ID slot #2"
+                    end
+
+                    local card = instance.cards.get(nfcData)
+                    
+                    showCardInfo(identity, card, scannedSlot)
+                end
+            elseif e == "nfc_write" and p1 == serverNfcName then
+                local writeSuccess = p2
+                local writeReason = p3
+                handleNfcRegenWrite(writeSuccess, writeReason)
+                
+            elseif e == "monitor_touch" and p1 == serverMonitorName then
+                local x, y = p2, p3
+                local action = ui.handleTouch(x, y)
+                
+                if action == "regen_slot1" then
+                    showRegenSlot("regen_slot1", "ID slot #1")
+                elseif action == "regen_slot2" then
+                    showRegenSlot("regen_slot2", "ID slot #2")
+                elseif action == "cancel" or action == "close" then
+                    resetToIdle()
+                end
+                
+            elseif e == "timer" then
+                local timerID = p1
+                
+                if timerID == autoHideTimer then
+                    autoHideTimer = nil
+                    resetToIdle()
+                elseif timerID == countdownTimer and (displayState == "regen_slot1" or displayState == "regen_slot2") then
+                    countdownSeconds = countdownSeconds - 1
+                    
+                    if countdownSeconds <= 0 then
+                        -- Timeout - cancel the regen
+                        resetToIdle()
+                    else
+                        -- Update countdown display
+                        mon.setCursorPos(2, 9)
+                        mon.setTextColor(MonitorButtons.COLORS.warning)
+                        mon.write("Waiting for write: " .. countdownSeconds .. "s   ")
+                        countdownTimer = os.startTimer(1)
+                    end
+                end
+            end
+        end
+    end
+    
     --- Combined access control loop (backwards compatible)
-    -- Runs both NFC and RFID access loops in parallel
+    -- Runs both NFC and RFID access loops in parallel, plus server monitor
     function instance.accessLoop()
         -- Check if there are any RFID scanners configured
         local hasRfid = false
@@ -991,14 +1435,25 @@ function TAC.new(config)
             end
         end
         
+        -- Check if server NFC monitor should run
+        local hasServerMonitor = instance.settings.get("server-nfc-reader") and instance.settings.get("server-monitor")
+        
+        -- Build list of loops to run
+        local loops = {}
+        table.insert(loops, function() instance.nfcAccessLoop() end)
+        
         if hasRfid then
-            -- Run both NFC and RFID loops in parallel
-            parallel.waitForAny(
-                function() instance.nfcAccessLoop() end,
-                function() instance.rfidAccessLoop() end
-            )
+            table.insert(loops, function() instance.rfidAccessLoop() end)
+        end
+        
+        if hasServerMonitor then
+            table.insert(loops, function() instance.serverNfcMonitorLoop() end)
+        end
+        
+        -- Run all loops in parallel
+        if #loops > 1 then
+            parallel.waitForAny(table.unpack(loops))
         else
-            -- Only run NFC loop
             instance.nfcAccessLoop()
         end
     end
