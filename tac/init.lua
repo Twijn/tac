@@ -2,13 +2,16 @@
     TAC (Terminal Access Control) Core Module
     
     The main package interface for the TAC access control system. This module
-    provides the core functionality for managing card-based access control,
+    provides the core functionality for managing identity-based access control,
     including extension management, command registration, hooks, and background
     process management.
     
+    Identities support both NFC (secure, requires physical tap) and RFID 
+    (proximity-based, less secure) access methods with distance limits.
+    
     @module tac
     @author Twijn
-    @version 1.4.3
+    @version 2.0.0
     @license MIT
     
     @example
@@ -34,7 +37,7 @@
     
     function MyExtension.init(tac)
         -- Access TAC functionality
-        local cards = tac.cards.getAll()
+        local identities = tac.identities.getAll()
         tac.logger.logAccess({...})
         
         -- Load other extensions
@@ -48,7 +51,7 @@
 ]]
 
 local TAC = {
-    version = "1.4.3",
+    version = "2.0.0",
     name = "tAC"
 }
 
@@ -98,14 +101,20 @@ function TAC.new(config)
     -- Initialize storage
     instance.settings = persist("settings.json")
     instance.doors = persist("doors.json")
-    instance.cards = persist("cards.json")
+    instance.cards = persist("cards.json")  -- Legacy support
+    instance.identities = persist("identities.json")
+    instance.identityLookup = persist("identity_lookup.json")
     
     -- Initialize logger
     instance.logger = TAC.Logger.new(persist)
     
-    -- Initialize card manager
+    -- Initialize card manager (legacy)
     local CardManager = require("tac.core.card_manager")
     instance.cardManager = CardManager.create(instance)
+    
+    -- Initialize identity manager (new system)
+    local IdentityManager = require("tac.core.identity_manager")
+    instance.identityManager = IdentityManager.create(instance)
     
     -- Initialize extension loader
     instance.extensionLoader = TAC.ExtensionLoader.create(instance)
@@ -398,26 +407,193 @@ function TAC.new(config)
         end
     end
     
-    --- Main access control loop
-    function instance.accessLoop()
+    --- Main access control loop (NFC)
+    -- Listens for NFC card scans and processes access
+    -- Uses debouncing to prevent multiple rapid scans
+    function instance.nfcAccessLoop()
+        -- Track recently processed NFC scans to prevent spam
+        local recentScans = {}
+        local NFC_COOLDOWN = 2  -- seconds
+        
         while true do
             local e, side, data = os.pullEvent("nfc_data")
+            
+            local now = os.epoch("utc") / 1000
+            
+            -- Clean up old entries
+            for key, timestamp in pairs(recentScans) do
+                if now - timestamp > NFC_COOLDOWN then
+                    recentScans[key] = nil
+                end
+            end
+            
+            -- Create unique key for this scan
+            local scanKey = side .. ":" .. (data or "")
+            
+            -- Check cooldown
+            if recentScans[scanKey] then
+                goto continue
+            end
+            recentScans[scanKey] = now
 
             -- Skip server NFC reader
             if side == instance.settings.get("server-nfc-reader") then
                 goto continue
             end
-
+            
+            -- Try to find identity by NFC data first (new system)
+            local identity = instance.identityManager.findByNfc(data)
+            
+            -- Fall back to legacy card system
             local card = instance.cards.get(data)
             local door = instance.doors.get(side)
+            
+            -- Also check if this side matches any door's nfcReader field
+            if not door then
+                for reader, doorData in pairs(instance.doors.getAll()) do
+                    if doorData.nfcReader == side then
+                        door = doorData
+                        break
+                    end
+                end
+            end
+            
+            -- Handle identity-based access (new system)
+            if identity then
+                -- Check if NFC is enabled for this identity
+                if not identity.nfcEnabled then
+                    instance.logger.logAccess("access_denied", {
+                        identity = {
+                            id = identity.id,
+                            name = identity.name or "Unknown",
+                            tags = identity.tags or {}
+                        },
+                        door = door and {
+                            name = door.name or "Unknown",
+                            tags = door.tags or {}
+                        } or nil,
+                        reason = "nfc_disabled",
+                        message = string.format("NFC access not enabled for identity: %s", identity.name or "Unknown")
+                    })
+                    
+                    if door then
+                        TAC.Hardware.showAccessDenied(door, "NFC DISABLED")
+                    end
+                    goto continue
+                end
+                
+                -- Check expiration
+                if identity.expiration then
+                    local nowMs = os.epoch("utc")
+                    if nowMs >= identity.expiration then
+                        instance.logger.logAccess("access_denied", {
+                            identity = {
+                                id = identity.id,
+                                name = identity.name or "Unknown",
+                                tags = identity.tags or {}
+                            },
+                            door = door and {
+                                name = door.name or "Unknown",
+                                tags = door.tags or {}
+                            } or nil,
+                            reason = "expired",
+                            message = string.format("Identity expired: %s", identity.name or "Unknown")
+                        })
+                        
+                        if door then
+                            TAC.Hardware.showAccessDenied(door, "EXPIRED")
+                        end
+                        goto continue
+                    end
+                end
+                
+                -- Execute before access hooks
+                local hookResult, hookMessage = instance.executeHooks("beforeAccess", identity, door, data, side, "nfc")
+                if not hookResult then
+                    if door then
+                        TAC.Hardware.showAccessDenied(door, hookMessage or "ACCESS DENIED")
+                    end
+                    instance.executeHooks("afterAccess", false, "hook_denied", identity, door)
+                    goto continue
+                end
+                
+                if not door then
+                    goto continue
+                end
+                
+                local granted, matchReason = TAC.Security.checkAccess(identity.tags, door.tags)
+                
+                if granted then
+                    instance.logger.logAccess("access_granted", {
+                        identity = {
+                            id = identity.id,
+                            name = identity.name or "Unknown",
+                            tags = identity.tags or {}
+                        },
+                        door = {
+                            name = door.name or "Unknown",
+                            tags = door.tags or {}
+                        },
+                        matched_tag = matchReason,
+                        scan_type = "nfc",
+                        message = string.format("NFC access granted for %s on %s: Matched %s", 
+                            identity.name or "Unknown", door.name or "Unknown", matchReason)
+                    })
 
+                    TAC.Hardware.openDoor(door, identity.name)
+                else
+                    instance.logger.logAccess("access_denied", {
+                        identity = {
+                            id = identity.id,
+                            name = identity.name or "Unknown",
+                            tags = identity.tags or {}
+                        },
+                        door = {
+                            name = door.name or "Unknown",
+                            tags = door.tags or {}
+                        },
+                        reason = "insufficient_permissions",
+                        message = string.format("Access denied for %s on %s", 
+                            identity.name or "Unknown", door.name or "Unknown")
+                    })
+                    
+                    TAC.Hardware.showAccessDenied(door, "ACCESS DENIED")
+                end
+
+                instance.executeHooks("afterAccess", granted, matchReason, identity, door)
+                goto continue
+            end
+
+            -- Legacy card-based access
             -- Ensure card has ID field for compatibility
             if card and not card.id then
                 card.id = data
             end
+            
+            -- Check if card is allowed for NFC access
+            if card and card.scanType and card.scanType ~= "nfc" and card.scanType ~= "both" then
+                instance.logger.logAccess("access_denied", {
+                    card = {
+                        id = data,
+                        name = card.name or "Unknown",
+                        tags = card.tags or {}
+                    },
+                    door = door and {
+                        name = door.name or "Unknown",
+                        tags = door.tags or {}
+                    } or nil,
+                    reason = "scan_type_mismatch",
+                    message = string.format("Card not authorized for NFC access (scanType: %s)", card.scanType or "none")
+                })
+                
+                if door then
+                    TAC.Hardware.showAccessDenied(door, "WRONG SCAN TYPE")
+                end
+                goto continue
+            end
 
             -- Execute before access hooks - if any hook returns false, deny access
-            local hookResult, hookMessage = instance.executeHooks("beforeAccess", card, door, data, side)
+            local hookResult, hookMessage = instance.executeHooks("beforeAccess", card, door, data, side, "nfc")
             if not hookResult then
                 -- Hook denied access, show message on sign and execute after access hooks
                 if door then
@@ -502,6 +678,331 @@ function TAC.new(config)
         end
     end
     
+    --- RFID access control loop
+    -- Periodically scans RFID readers and processes access
+    -- Supports distance limits from both doors and identities
+    function instance.rfidAccessLoop()
+        -- Get all doors with RFID scanners
+        local function getRfidDoors()
+            local rfidDoors = {}
+            for key, doorData in pairs(instance.doors.getAll()) do
+                if doorData.rfidScanner then
+                    rfidDoors[doorData.rfidScanner] = doorData
+                end
+            end
+            return rfidDoors
+        end
+        
+        -- Track recently processed badges to prevent spam (per door)
+        local recentBadges = {}
+        local COOLDOWN_TIME = 3 -- seconds
+        
+        -- Track currently processing badges to prevent parallel processing
+        local processingBadges = {}
+        
+        while true do
+            local rfidDoors = getRfidDoors()
+            local now = os.epoch("utc") / 1000
+            
+            -- Clean up old entries
+            for badge, timestamp in pairs(recentBadges) do
+                if now - timestamp > COOLDOWN_TIME then
+                    recentBadges[badge] = nil
+                end
+            end
+            
+            for scannerName, door in pairs(rfidDoors) do
+                local badges = TAC.Hardware.scanRFID(scannerName)
+                
+                if badges and #badges > 0 then
+                    -- Process each badge in range
+                    for _, badge in ipairs(badges) do
+                        if badge and badge.data then
+                            local data = badge.data
+                            local distance = badge.distance or 0
+                            local badgeKey = scannerName .. ":" .. data
+                            
+                            -- Skip if on cooldown or currently processing
+                            if recentBadges[badgeKey] or processingBadges[badgeKey] then
+                                goto nextBadge
+                            end
+                            
+                            -- Check door max distance first
+                            if door.maxDistance and distance > door.maxDistance then
+                                goto nextBadge
+                            end
+                            
+                            -- Mark as processing
+                            processingBadges[badgeKey] = true
+                            recentBadges[badgeKey] = now
+                            
+                            -- Try to find identity by RFID data first (new system)
+                            local identity = instance.identityManager.findByRfid(data)
+                            
+                            -- Fall back to legacy card system
+                            local card = instance.cards.get(data)
+                            
+                            -- Handle identity-based access (new system)
+                            if identity then
+                                -- Check if RFID is enabled for this identity
+                                if not identity.rfidEnabled then
+                                    instance.logger.logAccess("access_denied", {
+                                        identity = {
+                                            id = identity.id,
+                                            name = identity.name or "Unknown",
+                                            tags = identity.tags or {}
+                                        },
+                                        door = {
+                                            name = door.name or "Unknown",
+                                            tags = door.tags or {}
+                                        },
+                                        reason = "rfid_disabled",
+                                        scan_type = "rfid",
+                                        distance = distance,
+                                        message = string.format("RFID access not enabled for identity: %s", identity.name or "Unknown")
+                                    })
+                                    
+                                    TAC.Hardware.showAccessDenied(door, "RFID DISABLED")
+                                    processingBadges[badgeKey] = nil
+                                    goto nextBadge
+                                end
+                                
+                                -- Check identity max distance
+                                if identity.maxDistance and distance > identity.maxDistance then
+                                    instance.logger.logAccess("access_denied", {
+                                        identity = {
+                                            id = identity.id,
+                                            name = identity.name or "Unknown",
+                                            tags = identity.tags or {}
+                                        },
+                                        door = {
+                                            name = door.name or "Unknown",
+                                            tags = door.tags or {}
+                                        },
+                                        reason = "too_far",
+                                        scan_type = "rfid",
+                                        distance = distance,
+                                        maxDistance = identity.maxDistance,
+                                        message = string.format("Too far: %s (%.1fm > %.1fm limit)", 
+                                            identity.name or "Unknown", distance, identity.maxDistance)
+                                    })
+                                    
+                                    TAC.Hardware.showAccessDenied(door, "TOO FAR")
+                                    processingBadges[badgeKey] = nil
+                                    goto nextBadge
+                                end
+                                
+                                -- Check expiration
+                                if identity.expiration then
+                                    local nowMs = os.epoch("utc")
+                                    if nowMs >= identity.expiration then
+                                        instance.logger.logAccess("access_denied", {
+                                            identity = {
+                                                id = identity.id,
+                                                name = identity.name or "Unknown",
+                                                tags = identity.tags or {}
+                                            },
+                                            door = {
+                                                name = door.name or "Unknown",
+                                                tags = door.tags or {}
+                                            },
+                                            reason = "expired",
+                                            scan_type = "rfid",
+                                            message = string.format("Identity expired: %s", identity.name or "Unknown")
+                                        })
+                                        
+                                        TAC.Hardware.showAccessDenied(door, "EXPIRED")
+                                        processingBadges[badgeKey] = nil
+                                        goto nextBadge
+                                    end
+                                end
+                                
+                                -- Execute before access hooks
+                                local hookResult, hookMessage = instance.executeHooks("beforeAccess", identity, door, data, scannerName, "rfid")
+                                
+                                if not hookResult then
+                                    TAC.Hardware.showAccessDenied(door, hookMessage or "ACCESS DENIED")
+                                    instance.executeHooks("afterAccess", false, "hook_denied", identity, door)
+                                    processingBadges[badgeKey] = nil
+                                    goto nextBadge
+                                end
+                                
+                                local granted, matchReason = TAC.Security.checkAccess(identity.tags, door.tags)
+                                
+                                if granted then
+                                    instance.logger.logAccess("access_granted", {
+                                        identity = {
+                                            id = identity.id,
+                                            name = identity.name or "Unknown",
+                                            tags = identity.tags or {}
+                                        },
+                                        door = {
+                                            name = door.name or "Unknown",
+                                            tags = door.tags or {}
+                                        },
+                                        matched_tag = matchReason,
+                                        scan_type = "rfid",
+                                        distance = distance,
+                                        message = string.format("RFID access granted for %s on %s (%.1fm): Matched %s", 
+                                            identity.name or "Unknown", door.name or "Unknown", distance, matchReason)
+                                    })
+
+                                    TAC.Hardware.openDoor(door, identity.name)
+                                else
+                                    instance.logger.logAccess("access_denied", {
+                                        identity = {
+                                            id = identity.id,
+                                            name = identity.name or "Unknown",
+                                            tags = identity.tags or {}
+                                        },
+                                        door = {
+                                            name = door.name or "Unknown",
+                                            tags = door.tags or {}
+                                        },
+                                        reason = "insufficient_permissions",
+                                        scan_type = "rfid",
+                                        message = string.format("RFID access denied for %s on %s", 
+                                            identity.name or "Unknown", door.name or "Unknown")
+                                    })
+                                    
+                                    TAC.Hardware.showAccessDenied(door, "ACCESS DENIED")
+                                end
+
+                                instance.executeHooks("afterAccess", granted, matchReason, identity, door)
+                                processingBadges[badgeKey] = nil
+                                goto nextBadge
+                            end
+                            
+                            -- Legacy card-based access
+                            -- Ensure card has ID field for compatibility
+                            if card and not card.id then
+                                card.id = data
+                            end
+                            
+                            -- Check if card is allowed for RFID access
+                            if card and card.scanType and card.scanType ~= "rfid" and card.scanType ~= "both" then
+                                instance.logger.logAccess("access_denied", {
+                                    card = {
+                                        id = data,
+                                        name = card.name or "Unknown",
+                                        tags = card.tags or {}
+                                    },
+                                    door = {
+                                        name = door.name or "Unknown",
+                                        tags = door.tags or {}
+                                    },
+                                    reason = "scan_type_mismatch",
+                                    message = string.format("Card not authorized for RFID access (scanType: %s)", card.scanType or "none")
+                                })
+                                
+                                TAC.Hardware.showAccessDenied(door, "WRONG SCAN TYPE")
+                                processingBadges[badgeKey] = nil
+                                goto nextBadge
+                            end
+                            
+                            -- Execute before access hooks
+                            local hookResult, hookMessage = instance.executeHooks("beforeAccess", card, door, data, scannerName, "rfid")
+                            
+                            if not hookResult then
+                                TAC.Hardware.showAccessDenied(door, hookMessage or "ACCESS DENIED")
+                                instance.executeHooks("afterAccess", false, "hook_denied", card, door)
+                            elseif not card then
+                                instance.logger.logAccess("access_denied", {
+                                    card = {
+                                        id = data,
+                                        name = "Unknown",
+                                        tags = {}
+                                    },
+                                    door = {
+                                        name = door.name or "Unknown",
+                                        tags = door.tags or {}
+                                    },
+                                    reason = "invalid_card",
+                                    message = string.format("Access denied: Invalid RFID badge (%s)", TAC.Security.truncateCardId(data))
+                                })
+                                
+                                TAC.Hardware.showAccessDenied(door, "INVALID BADGE")
+                                instance.executeHooks("afterAccess", false, nil, card, door)
+                            else
+                                local granted, matchReason = TAC.Security.checkAccess(card.tags, door.tags)
+                                
+                                if granted then
+                                    instance.logger.logAccess("access_granted", {
+                                        card = {
+                                            id = data,
+                                            name = card.name or "Unknown",
+                                            tags = card.tags or {}
+                                        },
+                                        door = {
+                                            name = door.name or "Unknown",
+                                            tags = door.tags or {}
+                                        },
+                                        matched_tag = matchReason,
+                                        scan_type = "rfid",
+                                        distance = distance,
+                                        message = string.format("RFID access granted for %s on %s (%.1fm): Matched %s", 
+                                            card.name or "Unknown", door.name or "Unknown", distance, matchReason)
+                                    })
+
+                                    TAC.Hardware.openDoor(door, card.name)
+                                else
+                                    instance.logger.logAccess("access_denied", {
+                                        card = {
+                                            id = data,
+                                            name = card.name or "Unknown",
+                                            tags = card.tags or {}
+                                        },
+                                        door = {
+                                            name = door.name or "Unknown",
+                                            tags = door.tags or {}
+                                        },
+                                        reason = "insufficient_permissions",
+                                        message = string.format("RFID access denied for %s on %s", 
+                                            card.name or "Unknown", door.name or "Unknown")
+                                    })
+                                    
+                                    TAC.Hardware.showAccessDenied(door, "ACCESS DENIED")
+                                end
+
+                                instance.executeHooks("afterAccess", granted, matchReason, card, door)
+                            end
+                            
+                            processingBadges[badgeKey] = nil
+                            ::nextBadge::
+                        end
+                    end
+                end
+            end
+            
+            -- Poll interval (100ms)
+            sleep(0.1)
+        end
+    end
+    
+    --- Combined access control loop (backwards compatible)
+    -- Runs both NFC and RFID access loops in parallel
+    function instance.accessLoop()
+        -- Check if there are any RFID scanners configured
+        local hasRfid = false
+        for _, doorData in pairs(instance.doors.getAll()) do
+            if doorData.rfidScanner then
+                hasRfid = true
+                break
+            end
+        end
+        
+        if hasRfid then
+            -- Run both NFC and RFID loops in parallel
+            parallel.waitForAny(
+                function() instance.nfcAccessLoop() end,
+                function() instance.rfidAccessLoop() end
+            )
+        else
+            -- Only run NFC loop
+            instance.nfcAccessLoop()
+        end
+    end
+    
     --- Command line interface loop
     function instance.commandLoop()
         -- Dynamically load commands from commands directory
@@ -582,11 +1083,16 @@ function TAC.new(config)
         -- Print status information
         local doorCount = tables.count(instance.doors.getAll())
         local cardCount = tables.count(instance.cards.getAll())
+        local identityCount = tables.count(instance.identities.getAll())
         
         term.setTextColor(colors.lightBlue)
         print("Doors loaded: " .. doorCount)
         term.setTextColor(colors.lime)
-        print("Cards loaded: " .. cardCount)
+        print("Identities loaded: " .. identityCount)
+        if cardCount > 0 then
+            term.setTextColor(colors.yellow)
+            print("Legacy cards loaded: " .. cardCount)
+        end
         term.setTextColor(colors.white)
         
         term.setTextColor(colors.cyan)

@@ -4,26 +4,36 @@
     Provides consistent card creation, validation, and management APIs.
     Handles standard card creation, subscription cards with expiration,
     card renewal, and card information queries.
+    Supports NFC, RFID, or both scan types for cards.
     
     @module tac.core.card_manager
     @author Twijn
-    @version 1.0.1
+    @version 1.1.0
     @license MIT
     
     @example
     -- In your extension:
     function MyExtension.init(tac)
-        -- Create a simple card
+        -- Create a simple card (works with both NFC and RFID by default)
         local card, err = tac.cardManager.createCard({
             name = "John Doe",
-            tags = {"tenant.1", "vip"}
+            tags = {"tenant.1", "vip"},
+            scanType = "both"
+        })
+        
+        -- Create an RFID-only card
+        local rfidCard, err = tac.cardManager.createCard({
+            name = "Badge User",
+            tags = {"staff"},
+            scanType = "rfid"
         })
         
         -- Create a subscription card
         local subCard, err = tac.cardManager.createSubscriptionCard({
             username = "player1",
             duration = 30,
-            slot = "tenant.premium"
+            slot = "tenant.premium",
+            scanType = "nfc"
         })
         
         -- Renew a card
@@ -33,6 +43,7 @@
         local info, err = tac.cardManager.getCardInfo("tenant_1_player1")
         if info then
             print("Card expires in " .. (info.timeUntilExpiration / 86400000) .. " days")
+            print("Scan type: " .. info.scanType)
         end
     end
 ]]
@@ -85,6 +96,7 @@ local function create(tacInstance)
     --   - id (string, optional): Card ID (auto-generated if not provided)
     --   - name (string, required): Display name for the card
     --   - tags (table, required): Array of access tags
+    --   - scanType (string, optional): "nfc", "rfid", or "both" (default: "both")
     --   - expiration (number, optional): UTC epoch timestamp when card expires
     --   - username (string, optional): Username associated with card (used in ID generation)
     --   - prefix (string, optional): Prefix for auto-generated ID
@@ -93,18 +105,25 @@ local function create(tacInstance)
     --   - logMessage (string, optional): Custom log message
     ---@return table|nil Card data object if successful, nil on error
     ---@return string|nil Error message if creation failed
-    ---@usage local card, err = cardManager.createCard({name = "John Doe", tags = {"tenant.1"}})
+    ---@usage local card, err = cardManager.createCard({name = "John Doe", tags = {"tenant.1"}, scanType = "both"})
     function cardManager.createCard(options)
         local opts = options or {}
         
         -- Generate ID if not provided
         local cardId = opts.id or generateCardId(opts.username, opts.prefix)
         
+        -- Validate scanType
+        local scanType = opts.scanType or "both"
+        if scanType ~= "nfc" and scanType ~= "rfid" and scanType ~= "both" then
+            scanType = "both"
+        end
+        
         -- Build card data
         local cardData = {
             id = cardId,
             name = opts.name or (opts.username and (opts.username .. " Card") or "Unnamed Card"),
             tags = opts.tags or {},
+            scanType = scanType,
             expiration = opts.expiration,
             created = os.epoch("utc"),
             createdBy = opts.createdBy or "system",
@@ -121,7 +140,7 @@ local function create(tacInstance)
         tac.cards.set(cardData.id, cardData)
         
         -- Log the creation
-        local logMessage = opts.logMessage or ("Card created: " .. cardData.name)
+        local logMessage = opts.logMessage or ("Card created: " .. cardData.name .. " (scanType: " .. scanType .. ")")
         tac.logger.logAccess("card_created", {
             card = cardData,
             message = logMessage
@@ -139,6 +158,7 @@ local function create(tacInstance)
     --   - username (string, required): Username of the subscriber
     --   - duration (number, required): Subscription duration in days
     --   - slot (string, required): Access level/slot (becomes the card tag)
+    --   - scanType (string, optional): "nfc", "rfid", or "both" (default: "both")
     --   - createdBy (string, optional): Creator identifier (default: "shopk")
     --   - purchaseValue (number, optional): Purchase price for metadata
     --   - transactionId (string, optional): Transaction ID for metadata
@@ -169,6 +189,7 @@ local function create(tacInstance)
             id = opts.slot .. "_" .. opts.username:gsub("%s+", "_"):lower(),
             name = opts.username .. " (" .. opts.slot .. ")",
             tags = {opts.slot},
+            scanType = opts.scanType or "both",
             expiration = expiration,
             username = opts.username,
             createdBy = opts.createdBy or "shopk",
@@ -255,6 +276,7 @@ local function create(tacInstance)
     --   - id (string): Card ID
     --   - name (string): Card display name
     --   - tags (table): Access tags array
+    --   - scanType (string): "nfc", "rfid", or "both"
     --   - created (number): Creation timestamp
     --   - createdBy (string): Creator identifier
     --   - isExpired (boolean): Whether card is currently expired
@@ -273,6 +295,7 @@ local function create(tacInstance)
             id = card.id,
             name = card.name,
             tags = card.tags,
+            scanType = card.scanType or "both",
             created = card.created,
             createdBy = card.createdBy,
             isExpired = false,

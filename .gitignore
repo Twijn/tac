@@ -87,3 +87,6 @@ Thumbs.db
 /lib
 
 .settings
+
+# Log directory
+/log
