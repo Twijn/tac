@@ -693,23 +693,17 @@ function TAC.new(config)
             return rfidDoors
         end
         
-        -- Track recently processed badges to prevent spam (per door)
-        local recentBadges = {}
-        local COOLDOWN_TIME = 1.5 -- seconds (reduced for faster response)
-        
+        -- Track badges in range so we don't reprocess until they truly leave
+        local presentBadges = {}  -- badgeKey -> {misses = 0}
         -- Track currently processing badges to prevent parallel processing
         local processingBadges = {}
+        -- Track granted badges to hold doors open while present
+        local badgeGrants = {}  -- badgeKey -> {door = door}
+        local doorHoldCounts = {}  -- doorKey -> count of granted badges present
         
         while true do
             local rfidDoors = getRfidDoors()
-            local now = os.epoch("utc") / 1000
-            
-            -- Clean up old entries
-            for badge, timestamp in pairs(recentBadges) do
-                if now - timestamp > COOLDOWN_TIME then
-                    recentBadges[badge] = nil
-                end
-            end
+            local seenThisScan = {}
             
             for scannerName, door in pairs(rfidDoors) do
                 local badges = TAC.Hardware.scanRFID(scannerName)
@@ -722,8 +716,8 @@ function TAC.new(config)
                             local distance = badge.distance or 0
                             local badgeKey = scannerName .. ":" .. data
                             
-                            -- Skip if on cooldown or currently processing
-                            if recentBadges[badgeKey] or processingBadges[badgeKey] then
+                            -- Only process when a badge first appears or after it leaves
+                            if presentBadges[badgeKey] or processingBadges[badgeKey] then
                                 goto nextBadge
                             end
                             
@@ -734,7 +728,8 @@ function TAC.new(config)
                             
                             -- Mark as processing
                             processingBadges[badgeKey] = true
-                            recentBadges[badgeKey] = now
+                            presentBadges[badgeKey] = {misses = 0}
+                            seenThisScan[badgeKey] = true
                             
                             -- Try to find identity by RFID data first (new system)
                             local identity = instance.identityManager.findByRfid(data)
@@ -846,8 +841,10 @@ function TAC.new(config)
                                         message = string.format("RFID access granted for %s on %s (%.1fm): Matched %s", 
                                             identity.name or "Unknown", door.name or "Unknown", distance, matchReason)
                                     })
-
-                                    TAC.Hardware.openDoor(door, identity.name)
+                                    badgeGrants[badgeKey] = {door = door}
+                                    local doorKey = door.rfidScanner or door.nfcReader or scannerName
+                                    doorHoldCounts[doorKey] = (doorHoldCounts[doorKey] or 0) + 1
+                                    TAC.Hardware.controlDoor(door, true)
                                 else
                                     instance.logger.logAccess("access_denied", {
                                         identity = {
@@ -943,8 +940,10 @@ function TAC.new(config)
                                         message = string.format("RFID access granted for %s on %s (%.1fm): Matched %s", 
                                             card.name or "Unknown", door.name or "Unknown", distance, matchReason)
                                     })
-
-                                    TAC.Hardware.openDoor(door, card.name)
+                                    badgeGrants[badgeKey] = {door = door}
+                                    local doorKey = door.rfidScanner or door.nfcReader or scannerName
+                                    doorHoldCounts[doorKey] = (doorHoldCounts[doorKey] or 0) + 1
+                                    TAC.Hardware.controlDoor(door, true)
                                 else
                                     instance.logger.logAccess("access_denied", {
                                         card = {
@@ -970,6 +969,37 @@ function TAC.new(config)
                             processingBadges[badgeKey] = nil
                             ::nextBadge::
                         end
+                    end
+                end
+                -- Mark badges seen this loop so they stay active until they leave
+                if badges then
+                    for _, badge in ipairs(badges) do
+                        if badge and badge.data then
+                            seenThisScan[scannerName .. ":" .. badge.data] = true
+                        end
+                    end
+                end
+            end
+            -- Clear badges no longer present (require a few consecutive misses to avoid flicker)
+            for badgeKey, state in pairs(presentBadges) do
+                if seenThisScan[badgeKey] then
+                    state.misses = 0
+                else
+                    state.misses = (state.misses or 0) + 1
+                    if state.misses >= 3 then
+                        presentBadges[badgeKey] = nil
+                        local grant = badgeGrants[badgeKey]
+                        if grant and grant.door then
+                            local doorKey = grant.door.rfidScanner or grant.door.nfcReader or badgeKey
+                            if doorHoldCounts[doorKey] then
+                                doorHoldCounts[doorKey] = doorHoldCounts[doorKey] - 1
+                                if doorHoldCounts[doorKey] <= 0 then
+                                    doorHoldCounts[doorKey] = nil
+                                    TAC.Hardware.controlDoor(grant.door, false)
+                                end
+                            end
+                        end
+                        badgeGrants[badgeKey] = nil
                     end
                 end
             end
