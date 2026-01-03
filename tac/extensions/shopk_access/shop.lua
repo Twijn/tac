@@ -8,6 +8,7 @@
     @author Twijn
 ]]
 
+local log = require("log")
 local utils = require("tac.extensions.shopk_access.utils")
 local config = require("tac.extensions.shopk_access.config")
 local slots = require("tac.extensions.shopk_access.slots")
@@ -55,13 +56,13 @@ end
 function shop_handler.resumePendingWrites(tac)
     local pendingWrite = nfcWriteState.get("active")
     
-    print("[DEBUG] Checking for pending writes...")
+    log.debug("Checking for pending writes...")
     if not pendingWrite then 
-        print("[DEBUG] No pending writes found")
+        log.debug("No pending writes found")
         return 
     end
     
-    print("[DEBUG] Found pending write of type: " .. tostring(pendingWrite.type))
+    log.debug("Found pending write of type: " .. tostring(pendingWrite.type))
     
     term.setTextColor(colors.cyan)
     print("=== Resuming Pending NFC Write ===")

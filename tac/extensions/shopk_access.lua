@@ -29,6 +29,8 @@
     end
 ]]
 
+local log = require("log")
+
 local ShopKAccessExtension = {
     name = "shopk_access",
     version = "1.4.4",
@@ -53,9 +55,7 @@ local sales_data = {}
 -- Extension initialization
 -- @param tac table - TAC instance
 function ShopKAccessExtension.init(tac)
-    term.setTextColor(colors.magenta)
-    print("*** ShopK Access Extension Loading ***")
-    term.setTextColor(colors.white)
+    log.info("*** ShopK Access Extension Loading ***")
     
     -- Initialize sales tracking
     if not tac.settings.get("shopk_sales") then
@@ -69,18 +69,18 @@ function ShopKAccessExtension.init(tac)
     -- Initialize monitor UI (auto-detects monitor)
     local monitorInitialized = monitor_ui.init(tac)
     if monitorInitialized then
-        print("Monitor UI initialized for interactive purchases")
+        log.info("Monitor UI initialized for interactive purchases")
         monitor_ui.startTouchListener(tac)
     end
     
     -- Auto-start shop if private key is configured
     local ACCESS_CONFIG = config.get()
     if ACCESS_CONFIG.private_key and ACCESS_CONFIG.private_key ~= "" then
-        print("Private key found - auto-starting ShopK...")
+        log.info("Private key found - auto-starting ShopK...")
         -- Start shop directly - no need for timer delay
         shop.startShop(tac)
     else
-        print("No private key configured. Use 'shop config' to set up ShopK.")
+        log.warn("No private key configured. Use 'shop config' to set up ShopK.")
     end
     
     -- Add ShopK commands
@@ -107,9 +107,7 @@ function ShopKAccessExtension.init(tac)
         return true  -- Allow access check to continue
     end)
     
-    term.setTextColor(colors.lime)
-    print("ShopK Access Extension loaded successfully!")
-    term.setTextColor(colors.white)
+    log.info("ShopK Access Extension loaded successfully!")
 end
 
 -- Expose some functions for compatibility (if needed)

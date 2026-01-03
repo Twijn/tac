@@ -3,10 +3,11 @@
     
     Handles all access logging functionality for the TAC system.
     Logs access events, card creation, and other security-related activities.
+    Uses lib/log.lua for file logging with automatic daily rotation.
     
     @module tac.core.logger
     @author Twijn
-    @version 1.0.1
+    @version 1.1.0
     
     @example
     -- In your extension:
@@ -35,6 +36,7 @@
     end
 ]]
 
+local log = require("log")
 local AccessLogger = {}
 
 --- Initialize the logger with a persistent storage backend
@@ -53,6 +55,7 @@ function AccessLogger.new(persistBackend)
     --
     -- Records an access event with details about the card, door, and outcome.
     -- Events are stored with timestamps and can be retrieved for auditing.
+    -- Also writes to daily log files via lib/log.lua
     --
     ---@param eventType string Type of event: "access_granted", "access_denied", "card_created", "card_creation_cancelled"
     ---@param options table Event details with fields:
@@ -98,6 +101,27 @@ function AccessLogger.new(persistBackend)
         end
         
         accessLog.push(entry)
+        
+        -- Also log to file via lib/log.lua
+        local logMsg = string.format("[%s] %s", eventType, entry.message)
+        if entry.card and entry.card.name then
+            logMsg = logMsg .. " - Card: " .. entry.card.name
+        end
+        if entry.door and entry.door.name then
+            logMsg = logMsg .. " - Door: " .. entry.door.name
+        end
+        
+        if eventType == "access_granted" then
+            log.info(logMsg)
+        elseif eventType == "access_denied" then
+            log.warn(logMsg)
+        elseif eventType == "card_created" then
+            log.info(logMsg)
+        elseif eventType == "card_creation_cancelled" then
+            log.debug(logMsg)
+        else
+            log.debug(logMsg)
+        end
     end
     
     --- Get all access logs

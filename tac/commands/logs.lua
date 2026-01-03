@@ -1,101 +1,16 @@
 -- TAC Logs Command Module
 -- Handles access log viewing and management
 
-local interactiveList = require("tac.lib.interactive_list")
+local pager = require("pager")
 local LogsCommand = {}
 
--- Format a short log line for list display
-local function formatLogLine(log, tac)
-    local timestamp = tac.logger.formatTimestamp(log.timestamp)
-    local parts = {}
-    
-    -- Add card info (condensed)
-    if log.card then
-        local cardName = log.card.name or "??"
-        table.insert(parts, cardName)
-    end
-    
-    -- Add door info
-    if log.door then
-        table.insert(parts, log.door.name or "??")
-    end
-    
-    -- Format: [TIME] [C] TYPE | Card | @Door
-    return string.format("[%s] %s", timestamp, table.concat(parts, " | "))
-end
-
--- Format detailed log information for detail view
-local function formatLogDetails(log, tac)
-    local SecurityCore = require("tac.core.security")
-    local details = {}
-    
-    -- Header
-    table.insert(details, "=== LOG ENTRY DETAILS ===")
-    table.insert(details, "")
-    
-    -- Timestamp
-    table.insert(details, "Timestamp: " .. tac.logger.formatTimestamp(log.timestamp))
-    table.insert(details, "Type: " .. log.type:upper())
-    table.insert(details, "")
-    
-    -- Card information
-    if log.card then
-        table.insert(details, "--- Card Information ---")
-        table.insert(details, "Name: " .. (log.card.name or "Unknown"))
-        if log.card.id then
-            table.insert(details, "Short ID: " .. SecurityCore.truncateCardId(log.card.id))
-        end
-        if log.card.tags then
-            table.insert(details, "Tags: " .. table.concat(log.card.tags, ", "))
-        end
-        if log.card.expiration then
-            table.insert(details, "Expiration: " .. tac.logger.formatTimestamp(log.card.expiration))
-        end
-        table.insert(details, "")
-    end
-    
-    -- Door information
-    if log.door then
-        table.insert(details, "--- Door Information ---")
-        table.insert(details, "Name: " .. (log.door.name or "Unknown"))
-        if log.door.side then
-            table.insert(details, "Side: " .. log.door.side)
-        end
-        if log.door.required_tags then
-            table.insert(details, "Required Tags: " .. table.concat(log.door.required_tags, ", "))
-        end
-        table.insert(details, "")
-    end
-    
-    -- Additional information
-    if log.matched_tag then
-        table.insert(details, "Matched Tag: " .. log.matched_tag)
-    end
-    if log.reason then
-        table.insert(details, "Reason: " .. log.reason)
-    end
-    if log.message then
-        table.insert(details, "Message: " .. log.message)
-    end
-    
-    -- Raw data (for debugging)
-    if log.data then
-        table.insert(details, "")
-        table.insert(details, "--- Additional Data ---")
-        for k, v in pairs(log.data) do
-            if type(v) ~= "table" then
-                table.insert(details, k .. ": " .. tostring(v))
-            end
-        end
-    end
-    
-    return details
-end
-
--- Display logs using interactive list
+-- Display logs using pager
 local function displayLogs(logs, filterType, tac)
     if #logs == 0 then
+        -- No logs - this is informational, use standard print
+        term.setTextColor(colors.yellow)
         print("No logs found.")
+        term.setTextColor(colors.white)
         return
     end
     
@@ -108,17 +23,58 @@ local function displayLogs(logs, filterType, tac)
     local title = filterType and ("LOGS: " .. filterType:upper()) or "ACCESS LOGS"
     title = title .. " (" .. #logs .. " entries)"
     
-    interactiveList.show({
-        title = title,
-        items = reversedLogs,
-        formatItem = function(log) 
-            return formatLogLine(log, tac) 
-        end,
-        formatDetails = function(log)
-            return formatLogDetails(log, tac)
-        end,
-        showHelp = true
-    })
+    -- Build pager output
+    local p = pager.new(title)
+    
+    for i, log in ipairs(reversedLogs) do
+        -- Format short line
+        local timestamp = tac.logger.formatTimestamp(log.timestamp)
+        p:write("[" .. timestamp .. "] ")
+        
+        -- Color code by type
+        if log.type == "access_granted" then
+            p:setColor(colors.lime)
+        elseif log.type == "access_denied" then
+            p:setColor(colors.red)
+        elseif log.type == "card_created" then
+            p:setColor(colors.cyan)
+        else
+            p:setColor(colors.yellow)
+        end
+        
+        local parts = {}
+        if log.card then
+            table.insert(parts, log.card.name or "??")
+        end
+        if log.door then
+            table.insert(parts, log.door.name or "??")
+        end
+        
+        p:print(table.concat(parts, " | "))
+        
+        -- Add details below if available
+        if log.reason or log.matched_tag then
+            p:setColor(colors.lightGray)
+            local details = {}
+            if log.matched_tag then
+                table.insert(details, "Tag: " .. log.matched_tag)
+            end
+            if log.reason then
+                table.insert(details, "Reason: " .. log.reason)
+            end
+            p:print("  " .. table.concat(details, " | "))
+        end
+        
+        p:setColor(colors.white)
+        
+        -- Add spacing every few entries for readability
+        if i < #reversedLogs and i % 5 == 0 then
+            p:print("")
+        end
+    end
+    
+    -- Show the pager
+    p:show()
 end
 
 function LogsCommand.create(tac)

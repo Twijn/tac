@@ -25,6 +25,8 @@
     end
 ]]
 
+local log = require("log")
+
 local ShopMonitorExtension = {
     name = "shop_monitor",
     version = "1.0.4",
@@ -260,9 +262,7 @@ local function startMonitorUpdates(tac)
 
     tac.addHook("timer", function(timerID)
         if timerID == updateTimer then
-            term.setTextColor(colors.gray)
-            print("Monitor: Auto-updating display...")
-            term.setTextColor(colors.white)
+            log.debug("Monitor: Auto-updating display...")
             updateMonitorDisplay(tac)
             scheduleUpdate()
         end
@@ -344,9 +344,7 @@ end
 --- Extension initialization
 -- @param tac table - TAC instance
 function ShopMonitorExtension.init(tac)
-    term.setTextColor(colors.magenta)
-    print("*** Shop Monitor Extension Loading ***")
-    term.setTextColor(colors.white)
+    log.info("*** Shop Monitor Extension Loading ***")
     
     -- Register extension settings requirements
     tac.registerExtensionSettings("shop_monitor", {
@@ -404,9 +402,9 @@ function ShopMonitorExtension.init(tac)
     if MONITOR_CONFIG.monitor_side then
         monitor = peripheral.wrap(MONITOR_CONFIG.monitor_side)
         if monitor then
-            print("Monitor connected: " .. MONITOR_CONFIG.monitor_side)
+            log.info("Monitor connected: " .. MONITOR_CONFIG.monitor_side)
         else
-            print("Warning: Configured monitor not found, will auto-detect")
+            log.warn("Warning: Configured monitor not found, will auto-detect")
         end
     end
     
@@ -419,7 +417,7 @@ function ShopMonitorExtension.init(tac)
                 -- Save both combined config and individual keys for persistence
                 tac.settings.set("shop_monitor_config", MONITOR_CONFIG)
                 tac.settings.set("shop_monitor_side", side)
-                print("Monitor auto-configured: " .. side)
+                log.info("Monitor auto-configured: " .. side)
                 break
             end
         end
@@ -427,18 +425,18 @@ function ShopMonitorExtension.init(tac)
     
         -- Register monitor update background process
     tac.registerBackgroundProcess("monitor_updates", function()
-        print("Monitor background process starting...")
+        log.debug("Monitor background process starting...")
         
         -- Wait for ShopK to be ready first, but don't wait forever
         local attempts = 0
         while attempts < 100 do -- Wait up to 10 seconds (100 * 0.1s)
             local shopData = getShopData(tac)
             if shopData.address and shopData.running then
-                print("Monitor: ShopK ready, starting updates...")
+                log.debug("Monitor: ShopK ready, starting updates...")
                 break
             end
             if attempts % 50 == 0 then -- Every 5 seconds
-                print("Monitor: Still waiting for ShopK... (" .. attempts/10 .. "s)")
+                log.debug("Monitor: Still waiting for ShopK... (" .. attempts/10 .. "s)")
             end
             sleep(0.1)
             attempts = attempts + 1
@@ -452,7 +450,7 @@ function ShopMonitorExtension.init(tac)
             
             -- Debug: Log when monitor is busy
             if isMonitorBusy and MONITOR_CONFIG.debug then
-                print("[shop_monitor] Monitor UI is busy, skipping update")
+                log.debug("[shop_monitor] Monitor UI is busy, skipping update")
             end
             
             if not isMonitorBusy then
@@ -473,7 +471,7 @@ function ShopMonitorExtension.init(tac)
                                 -- Persist the auto-detected monitor
                                 tac.settings.set("shop_monitor_config", MONITOR_CONFIG)
                                 tac.settings.set("shop_monitor_side", side)
-                                print("Monitor: Auto-detected " .. side)
+                                log.debug("Monitor: Auto-detected " .. side)
                                 break
                             end
                         end
@@ -485,7 +483,7 @@ function ShopMonitorExtension.init(tac)
                 if monitor then
                     local success, err = pcall(updateMonitorDisplay, tac)
                     if not success then
-                        print("Monitor update error: " .. tostring(err))
+                        log.error("Monitor update error: " .. tostring(err))
                     end
                 end
             else
@@ -575,9 +573,7 @@ function ShopMonitorExtension.init(tac)
         end
     })
     
-    term.setTextColor(colors.lime)
-    print("Shop Monitor Extension loaded successfully!")
-    term.setTextColor(colors.white)
+    log.info("Shop Monitor Extension loaded successfully!")
 end
 
 return ShopMonitorExtension

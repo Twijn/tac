@@ -61,6 +61,9 @@ TAC.Logger = require("tac.core.logger")
 TAC.Hardware = require("tac.core.hardware")
 TAC.ExtensionLoader = require("tac.core.extension_loader")
 
+-- Utility libraries
+local logLib = require("log")
+
 -- Extension registry
 TAC.extensions = {}
 TAC.commands = {}
@@ -359,17 +362,13 @@ function TAC.new(config)
                     if d and d.mess then
                         d.mess("Settings saved for " .. extName)
                     else
-                        term.setTextColor(colors.lime)
-                        print("Settings saved for " .. extName)
-                        term.setTextColor(colors.white)
+                        logLib.info("Settings saved for " .. extName)
                     end
                 else
                     if d and d.mess then
                         d.mess("Configuration cancelled for " .. extName)
                     else
-                        term.setTextColor(colors.orange)
-                        print("Configuration cancelled for " .. extName)
-                        term.setTextColor(colors.white)
+                        logLib.warn("Configuration cancelled for " .. extName)
                     end
                 end
             end
@@ -1592,19 +1591,13 @@ function TAC.new(config)
                                 local commandName = cmdDef.name or cmdName
                                 instance.registerCommand(commandName, cmdDef)
                             else
-                                term.setTextColor(colors.red)
-                                print("Warning: Failed to create command '" .. cmdName .. "': " .. tostring(cmdDef))
-                                term.setTextColor(colors.white)
+                                logLib.error("Warning: Failed to create command '" .. cmdName .. "': " .. tostring(cmdDef))
                             end
                         else
-                            term.setTextColor(colors.yellow)
-                            print("Warning: Command module '" .. cmdName .. "' has no create function")
-                            term.setTextColor(colors.white)
+                            logLib.warn("Warning: Command module '" .. cmdName .. "' has no create function")
                         end
                     else
-                        term.setTextColor(colors.red)
-                        print("Warning: Failed to load command '" .. cmdName .. "': " .. tostring(cmdModule))
-                        term.setTextColor(colors.white)
+                        logLib.error("Warning: Failed to load command '" .. cmdName .. "': " .. tostring(cmdModule))
                     end
                 end
             end
@@ -1652,19 +1645,13 @@ function TAC.new(config)
         local cardCount = tables.count(instance.cards.getAll())
         local identityCount = tables.count(instance.identities.getAll())
         
-        term.setTextColor(colors.lightBlue)
-        print("Doors loaded: " .. doorCount)
-        term.setTextColor(colors.lime)
-        print("Identities loaded: " .. identityCount)
+        logLib.info("Doors loaded: " .. doorCount)
+        logLib.info("Identities loaded: " .. identityCount)
         if cardCount > 0 then
-            term.setTextColor(colors.yellow)
-            print("Legacy cards loaded: " .. cardCount)
+            logLib.warn("Legacy cards loaded: " .. cardCount)
         end
-        term.setTextColor(colors.white)
         
-        term.setTextColor(colors.cyan)
-        print("*** " .. TAC.name .. " v" .. TAC.version .. " READY ***")
-        term.setTextColor(colors.white)
+        logLib.info("*** " .. TAC.name .. " v" .. TAC.version .. " READY ***")
         
         -- Collect all processes to run in parallel
         local processes = {}
@@ -1672,17 +1659,13 @@ function TAC.new(config)
         -- Always start access control (default behavior)
         local mode = instance.config.mode or "access"
         if mode == "access" then
-            term.setTextColor(colors.yellow)
-            print("Starting in ACCESS mode - NFC scanning active")
-            term.setTextColor(colors.white)
+            logLib.info("Starting in ACCESS mode - NFC scanning active")
             
             -- Add access control process
             table.insert(processes, function()
                 local success, err = pcall(instance.accessLoop)
                 if not success then
-                    term.setTextColor(colors.red)
-                    print("Access loop error: " .. tostring(err))
-                    term.setTextColor(colors.white)
+                    logLib.error("Access loop error: " .. tostring(err))
                 end
             end)
         end
@@ -1691,9 +1674,7 @@ function TAC.new(config)
         table.insert(processes, function()
             local success, err = pcall(instance.commandLoop)
             if not success then
-                term.setTextColor(colors.red)
-                print("Command loop error: " .. tostring(err))
-                term.setTextColor(colors.white)
+                logLib.error("Command loop error: " .. tostring(err))
             end
         end)
         
@@ -1701,7 +1682,7 @@ function TAC.new(config)
         for name, processFunc in pairs(instance.backgroundProcesses) do
             -- Skip disabled processes
             if not instance.disabledProcesses[name] then
-                print("Starting background process: " .. name)
+                logLib.debug("Starting background process: " .. name)
                 table.insert(processes, function()
                     -- Mark as running
                     if instance.processStatus[name] then
@@ -1723,7 +1704,7 @@ function TAC.new(config)
                     end
                 end)
             else
-                print("Skipping disabled process: " .. name)
+                logLib.debug("Skipping disabled process: " .. name)
             end
         end
         
@@ -1736,15 +1717,11 @@ function TAC.new(config)
                 return
             elseif err == "Terminated" then
                 -- CTRL+C pressed
-                term.setTextColor(colors.yellow)
-                print("Interrupt received, shutting down...")
-                term.setTextColor(colors.white)
+                logLib.warn("Interrupt received, shutting down...")
                 instance.shutdown()
             else
                 -- Other error
-                term.setTextColor(colors.red)
-                print("TAC error: " .. tostring(err))
-                term.setTextColor(colors.white)
+                logLib.error("TAC error: " .. tostring(err))
                 instance.shutdown()
             end
         end
@@ -1752,16 +1729,12 @@ function TAC.new(config)
     
     --- Shutdown the TAC system gracefully
     function instance.shutdown()
-        term.setTextColor(colors.yellow)
-        print("Shutting down TAC...")
-        term.setTextColor(colors.white)
+        logLib.info("Shutting down TAC...")
         
         -- Execute shutdown hooks
         instance.executeHooks("beforeShutdown")
         
-        term.setTextColor(colors.lime)
-        print("TAC shutdown complete.")
-        term.setTextColor(colors.white)
+        logLib.info("TAC shutdown complete.")
     end
     
     return instance
@@ -1779,9 +1752,7 @@ end
 ---@usage local results = TAC.loadExtensions(tac, {silent = false})
 function TAC.loadExtensions(instance, options)
     if not instance.extensionLoader then
-        term.setTextColor(colors.red)
-        print("Extension loader not initialized")
-        term.setTextColor(colors.white)
+        logLib.error("Extension loader not initialized")
         return {loaded = {}, failed = {}, skipped = {}}
     end
     

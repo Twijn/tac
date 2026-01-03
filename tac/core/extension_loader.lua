@@ -21,12 +21,14 @@
     -- Check loaded extensions
     local loaded = loader.getLoadedExtensions()
     for name, metadata in pairs(loaded) do
-        print(name .. " v" .. metadata.version)
+        log.debug(name .. " v" .. metadata.version)
     end
     
     -- Load specific extension
     local ext, err = loader.loadExtension("shopk_access", "tac/extensions/shopk_access.lua")
 ]]
+
+local log = require("log")
 
 local ExtensionLoader = {}
 
@@ -192,9 +194,7 @@ function ExtensionLoader.create(tacInstance)
         local success, files = pcall(fs.list, directory)
         if not success then
             if not silent then
-                term.setTextColor(colors.red)
-                print("Failed to list extensions directory: " .. directory)
-                term.setTextColor(colors.white)
+                log.error("Failed to list extensions directory: " .. directory)
             end
             return results
         end
@@ -233,9 +233,7 @@ function ExtensionLoader.create(tacInstance)
                         })
                         
                         if not silent then
-                            term.setTextColor(colors.red)
-                            print("Failed to load extension '" .. extName .. "': " .. err)
-                            term.setTextColor(colors.white)
+                            log.error("Failed to load extension '" .. extName .. "': " .. err)
                         end
                     end
                 end
@@ -247,9 +245,7 @@ function ExtensionLoader.create(tacInstance)
         
         if not loadOrder then
             if not silent then
-                term.setTextColor(colors.red)
-                print("Extension dependency error: " .. sortErr)
-                term.setTextColor(colors.white)
+                log.error("Extension dependency error: " .. sortErr)
             end
             
             -- Load what we can without sorting
@@ -277,9 +273,7 @@ function ExtensionLoader.create(tacInstance)
                 })
                 
                 if not silent then
-                    term.setTextColor(colors.red)
-                    print("Cannot load '" .. extName .. "': " .. depsErr)
-                    term.setTextColor(colors.white)
+                    log.error("Cannot load '" .. extName .. "': " .. depsErr)
                 end
             else
                 -- Check optional dependencies
@@ -291,9 +285,7 @@ function ExtensionLoader.create(tacInstance)
                 end
                 
                 if #missingOptional > 0 and not silent then
-                    term.setTextColor(colors.yellow)
-                    print("'" .. extName .. "' missing optional dependencies: " .. table.concat(missingOptional, ", "))
-                    term.setTextColor(colors.white)
+                    log.warn("'" .. extName .. "' missing optional dependencies: " .. table.concat(missingOptional, ", "))
                 end
                 
                 -- Register and initialize
@@ -306,9 +298,7 @@ function ExtensionLoader.create(tacInstance)
                     table.insert(results.loaded, extName)
                     
                     if not silent then
-                        term.setTextColor(colors.lime)
-                        print("Loaded: " .. extName .. " v" .. metadata.version)
-                        term.setTextColor(colors.white)
+                        log.info("Loaded: " .. extName .. " v" .. metadata.version)
                     end
                 else
                     table.insert(results.failed, {
@@ -318,9 +308,7 @@ function ExtensionLoader.create(tacInstance)
                     })
                     
                     if not silent then
-                        term.setTextColor(colors.red)
-                        print("Failed to initialize '" .. extName .. "': " .. tostring(initErr))
-                        term.setTextColor(colors.white)
+                        log.error("Failed to initialize '" .. extName .. "': " .. tostring(initErr))
                     end
                 end
             end
@@ -350,9 +338,7 @@ function ExtensionLoader.create(tacInstance)
         
         if not extension then
             if not silent then
-                term.setTextColor(colors.red)
-                print("Failed to load '" .. extensionName .. "': " .. err)
-                term.setTextColor(colors.white)
+                log.error("Failed to load '" .. extensionName .. "': " .. err)
             end
             return false, err
         end
@@ -363,9 +349,7 @@ function ExtensionLoader.create(tacInstance)
         local depsOk, depsErr = checkDependencies(metadata.dependencies, tac.extensions)
         if not depsOk then
             if not silent then
-                term.setTextColor(colors.red)
-                print("Cannot load '" .. extensionName .. "': " .. depsErr)
-                term.setTextColor(colors.white)
+                log.error("Cannot load '" .. extensionName .. "': " .. depsErr)
             end
             return false, depsErr
         end
@@ -377,17 +361,13 @@ function ExtensionLoader.create(tacInstance)
         
         if not initSuccess then
             if not silent then
-                term.setTextColor(colors.red)
-                print("Failed to initialize '" .. extensionName .. "': " .. tostring(initErr))
-                term.setTextColor(colors.white)
+                log.error("Failed to initialize '" .. extensionName .. "': " .. tostring(initErr))
             end
             return false, tostring(initErr)
         end
         
         if not silent then
-            term.setTextColor(colors.lime)
-            print("Loaded: " .. extensionName .. " v" .. metadata.version)
-            term.setTextColor(colors.white)
+            log.info("Loaded: " .. extensionName .. " v" .. metadata.version)
         end
         
         return true, nil

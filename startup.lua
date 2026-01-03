@@ -17,6 +17,9 @@ if not package.path:find("tac") then
   package.path = package.path .. ";tac/?.lua"
 end
 
+-- Load utility libraries
+local log = require("log")
+
 -- Load the TAC system
 local TAC = require("tac.init")
 
@@ -27,9 +30,7 @@ local tac = TAC.new({
 })
 
 -- Load and register extensions
-term.setTextColor(colors.yellow)
-print("Loading extensions...")
-term.setTextColor(colors.white)
+log.info("Loading extensions...")
 TAC.loadExtensions(tac)
 
 -- Count loaded extensions
@@ -39,9 +40,7 @@ for _ in pairs(tac.extensions) do
 end
 
 if extCount > 0 then
-  term.setTextColor(colors.lime)
-  print("Extensions loaded: " .. extCount)
-  term.setTextColor(colors.white)
+  log.info("Extensions loaded: " .. extCount)
 end
 
 -- Check for missing extension settings and prompt if needed

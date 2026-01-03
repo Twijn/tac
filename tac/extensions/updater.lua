@@ -12,6 +12,7 @@
     @license MIT
 ]]
 
+local log = require("log")
 local UpdaterExtension = {
     name = "updater",
     version = "1.3.0",
@@ -193,13 +194,11 @@ function UpdaterExtension.init(tac)
         if ok then
             local updates = updatesOrErr
             if type(updates) == "table" and #updates > 0 then
-                term.setTextColor(colors.yellow)
-                print("TAC Updater: Updates available for the following libraries:")
+                log.warn("TAC Updater: Updates available for the following libraries:")
                 for _, lib in ipairs(updates) do
-                    print(string.format("- %s: %s -> %s", lib.name, lib.current or "?", lib.latest or "?"))
+                    log.warn(string.format("- %s: %s -> %s", lib.name, lib.current or "?", lib.latest or "?"))
                 end
-                print("Run 'updater update' to update.")
-                term.setTextColor(colors.white)
+                log.warn("Run 'updater update' to update.")
             end
         end
     end
@@ -227,13 +226,11 @@ function UpdaterExtension.init(tac)
             end
             
             if #newLibs > 0 then
-                term.setTextColor(colors.cyan)
-                print("TAC Updater: New libraries available:")
+                log.info("TAC Updater: New libraries available:")
                 for _, name in ipairs(newLibs) do
-                    print("- " .. name)
+                    log.info("- " .. name)
                 end
-                print("Run 'updater install <name>' to install.")
-                term.setTextColor(colors.white)
+                log.info("Run 'updater install <name>' to install.")
             end
         end)
     end

@@ -8,6 +8,8 @@
     @author Twijn
 ]]
 
+local log = require("log")
+
 local monitor_ui = {}
 
 -- UI state
@@ -456,23 +458,22 @@ end
 -- @param x number - touch X coordinate
 -- @param y number - touch Y coordinate
 function monitor_ui.handleTouch(x, y)
-    print("[DEBUG] Touch received at " .. x .. ", " .. y)
-    print("[DEBUG] Active session: " .. tostring(activeSession ~= nil))
+    log.debug("Touch received at " .. x .. ", " .. y)
+    log.debug("Active session: " .. tostring(activeSession ~= nil))
     
     if not activeSession or not activeSession.buttons then 
-        print("[DEBUG] No active session or buttons")
-        return 
+        log.debug("No active session or buttons")
+        return
     end
     
-    print("[DEBUG] Session type: " .. tostring(activeSession.type))
-    print("[DEBUG] Button count: " .. #activeSession.buttons)
-    
+    log.debug("Session type: " .. tostring(activeSession.type))
+    log.debug("Button count: " .. #activeSession.buttons)
     local touch = {x = x, y = y}
     
     for i, button in ipairs(activeSession.buttons) do
-        print("[DEBUG] Checking button " .. i .. ": bounds=" .. textutils.serialize(button.bounds))
+        log.debug("Checking button " .. i .. ": bounds=" .. textutils.serialize(button.bounds))
         if isTouchInButton(touch, button.bounds) then
-            print("[DEBUG] Button " .. i .. " pressed! Action: " .. button.action)
+            log.debug("Button " .. i .. " pressed! Action: " .. button.action)
             -- Button pressed
             local callback = activeSession.callback
             local action = button.action
@@ -482,21 +483,21 @@ function monitor_ui.handleTouch(x, y)
             
             -- Call callback
             if callback then
-                print("[DEBUG] Calling callback with action: " .. tostring(action))
+                log.debug("Calling callback with action: " .. tostring(action))
                 if action == "cancel" then
                     callback(nil)
                 else
                     callback(action)
                 end
             else
-                print("[DEBUG] No callback set!")
+                log.debug("No callback set!")
             end
             
             return
         end
     end
     
-    print("[DEBUG] Touch outside all buttons")
+    log.debug("Touch outside all buttons")
 end
 
 --- Handle timer events for clearing screens
@@ -517,20 +518,20 @@ function monitor_ui.startTouchListener(tac)
     
     -- Register as background process
     tac.registerBackgroundProcess("monitor_ui_touch", function()
-        print("[DEBUG] Monitor UI touch listener started")
-        print("[DEBUG] Monitoring touches on: " .. tostring(activeMonitorSide))
+        log.debug("Monitor UI touch listener started")
+        log.debug("Monitoring touches on: " .. tostring(activeMonitorSide))
         while touchListener do
             local event, side, x, y = os.pullEvent()
             
             if event == "monitor_touch" then
-                print("[DEBUG] monitor_touch event received on " .. side)
-                print("[DEBUG] Our monitor side: " .. tostring(activeMonitorSide))
+                log.debug("monitor_touch event received on " .. side)
+                log.debug("Our monitor side: " .. tostring(activeMonitorSide))
                 -- Check if touch is on our monitor by comparing peripheral names
                 if activeMonitorSide and side == activeMonitorSide then
-                    print("[DEBUG] Touch is on our monitor, handling...")
+                    log.debug("Touch is on our monitor, handling...")
                     monitor_ui.handleTouch(x, y)
                 else
-                    print("[DEBUG] Touch is on different monitor (expected: " .. tostring(activeMonitorSide) .. ", got: " .. side .. ")")
+                    log.debug("Touch is on different monitor (expected: " .. tostring(activeMonitorSide) .. ", got: " .. side .. ")")
                 end
             elseif event == "timer" then
                 -- Handle timer events for clearing screens
