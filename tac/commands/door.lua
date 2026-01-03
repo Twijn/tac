@@ -135,14 +135,24 @@ function DoorCommand.create(tac)
                 end)
                 
                 -- Tags section
-                setupForm:label("Access Tags")
+                setupForm:label("Access Tags (at least one required)")
                 
                 local availableTags = getAvailableTags()
+                
+                -- Find index of wildcard tag for default
+                local defaultIndices = {}
+                for i, tag in ipairs(availableTags) do
+                    if tag == "*" then
+                        defaultIndices[i] = true
+                        break
+                    end
+                end
+                
                 local getTagsMulti
                 if #availableTags > 0 then
-                    getTagsMulti = setupForm:multiselect("Select Tags", availableTags, {})
+                    getTagsMulti = setupForm:multiselect("Select Tags", availableTags, defaultIndices, true)  -- Make optional
                 end
-                local getTagsCustom = setupForm:text("Custom Tags", "", nil, true)
+                local getTagsCustom = setupForm:text("Custom Tags (comma-separated)", "", nil, true)
                 
                 setupForm:addSubmitCancel()
 
@@ -163,8 +173,10 @@ function DoorCommand.create(tac)
                     local tags = {}
                     if getTagsMulti then
                         local selectedTags = getTagsMulti()
-                        for _, tag in ipairs(selectedTags) do
-                            table.insert(tags, tag)
+                        if selectedTags then  -- Check if multiselect returned tags
+                            for _, tag in ipairs(selectedTags) do
+                                table.insert(tags, tag)
+                            end
                         end
                     end
                     
@@ -356,13 +368,13 @@ function DoorCommand.create(tac)
                 end)
                 
                 -- Tags section
-                editForm:label("Access Tags")
+                editForm:label("Access Tags (at least one required)")
                 local availableTags = getAvailableTags()
                 local currentTagIndices = tagsToIndices(currentDoor.tags, availableTags)
                 
                 local getTagsMulti
                 if #availableTags > 0 then
-                    getTagsMulti = editForm:multiselect("Select Tags", availableTags, currentTagIndices)
+                    getTagsMulti = editForm:multiselect("Select Tags", availableTags, currentTagIndices, true)  -- Make optional
                 end
                 
                 -- Find custom tags not in available list
@@ -379,7 +391,7 @@ function DoorCommand.create(tac)
                         table.insert(customTags, tag)
                     end
                 end
-                local getTagsCustom = editForm:text("Custom Tags", table.concat(customTags, ","), nil, true)
+                local getTagsCustom = editForm:text("Custom Tags (comma-separated)", table.concat(customTags, ","), nil, true)
                 
                 -- Scanner info (read-only display)
                 editForm:label("Hardware (delete & re-setup to change):")
@@ -402,8 +414,10 @@ function DoorCommand.create(tac)
                     local tags = {}
                     if getTagsMulti then
                         local selectedTags = getTagsMulti()
-                        for _, tag in ipairs(selectedTags) do
-                            table.insert(tags, tag)
+                        if selectedTags then  -- Check if multiselect returned tags
+                            for _, tag in ipairs(selectedTags) do
+                                table.insert(tags, tag)
+                            end
                         end
                     end
                     
@@ -419,6 +433,11 @@ function DoorCommand.create(tac)
                                 table.insert(tags, tag)
                             end
                         end
+                    end
+                    
+                    -- Default to wildcard if no tags
+                    if #tags == 0 then
+                        tags = {"*"}
                     end
                     
                     if newName and newName ~= "" then

@@ -694,12 +694,62 @@ function TAC.new(config)
         end
         
         -- Track badges in range so we don't reprocess until they truly leave
-        local presentBadges = {}  -- badgeKey -> {misses = 0}
+        local presentBadges = {}  -- badgeKey -> {misses = 0, maxDistance = number|nil}
         -- Track currently processing badges to prevent parallel processing
         local processingBadges = {}
         -- Track granted badges to hold doors open while present
-        local badgeGrants = {}  -- badgeKey -> {door = door}
+        local badgeGrants = {}  -- badgeKey -> {door = door, identity = identity|nil, card = card|nil, maxDistance = number|nil}
         local doorHoldCounts = {}  -- doorKey -> count of granted badges present
+
+        -- Compute the allowed distance for a badge (door + identity limits)
+        local function computeMaxDistance(door, identity)
+            local maxDist = nil
+
+            if door and door.maxDistance then
+                maxDist = door.maxDistance
+            end
+
+            if identity and identity.maxDistance then
+                if maxDist then
+                    maxDist = math.min(maxDist, identity.maxDistance)
+                else
+                    maxDist = identity.maxDistance
+                end
+            end
+
+            return maxDist
+        end
+
+        -- Clear tracking for a badge and close doors when appropriate
+        local function releaseBadge(badgeKey, reason, distance)
+            local grant = badgeGrants[badgeKey]
+            local door = grant and grant.door
+
+            if door then
+                local doorKey = door.rfidScanner or door.nfcReader or badgeKey
+                local shouldClose = false
+
+                if doorHoldCounts[doorKey] then
+                    doorHoldCounts[doorKey] = doorHoldCounts[doorKey] - 1
+                    if doorHoldCounts[doorKey] <= 0 then
+                        doorHoldCounts[doorKey] = nil
+                        shouldClose = true
+                    end
+                else
+                    shouldClose = true
+                end
+
+                if shouldClose then
+                    TAC.Hardware.controlDoor(door, false)
+                    TAC.Hardware.updateDoorMonitor(door)
+                    TAC.Hardware.updateDoorSign(door)
+                end
+            end
+
+            presentBadges[badgeKey] = nil
+            badgeGrants[badgeKey] = nil
+            processingBadges[badgeKey] = nil
+        end
         
         while true do
             local rfidDoors = getRfidDoors()
@@ -716,19 +766,32 @@ function TAC.new(config)
                             local distance = badge.distance or 0
                             local badgeKey = scannerName .. ":" .. data
                             
-                            -- Only process when a badge first appears or after it leaves
-                            if presentBadges[badgeKey] or processingBadges[badgeKey] then
+                            -- Skip if we're already processing this badge
+                            if processingBadges[badgeKey] then
                                 goto nextBadge
                             end
-                            
-                            -- Check door max distance first
+
+                            -- If badge is currently present, enforce distance and keep the door held
+                            if presentBadges[badgeKey] then
+                                local presence = presentBadges[badgeKey]
+                                local allowed = presence.maxDistance
+
+                                if allowed and distance and distance > allowed then
+                                    releaseBadge(badgeKey, "too_far", distance)
+                                else
+                                    seenThisScan[badgeKey] = true
+                                end
+
+                                goto nextBadge
+                            end
+
+                            -- Check door max distance first (identity-specific limits are handled after lookup)
                             if door.maxDistance and distance > door.maxDistance then
                                 goto nextBadge
                             end
-                            
+
                             -- Mark as processing
                             processingBadges[badgeKey] = true
-                            presentBadges[badgeKey] = {misses = 0}
                             seenThisScan[badgeKey] = true
                             
                             -- Try to find identity by RFID data first (new system)
@@ -841,10 +904,24 @@ function TAC.new(config)
                                         message = string.format("RFID access granted for %s on %s (%.1fm): Matched %s", 
                                             identity.name or "Unknown", door.name or "Unknown", distance, matchReason)
                                     })
-                                    badgeGrants[badgeKey] = {door = door}
+                                    local maxDistance = computeMaxDistance(door, identity)
+
+                                    badgeGrants[badgeKey] = {
+                                        door = door,
+                                        identity = identity,
+                                        card = nil,
+                                        maxDistance = maxDistance
+                                    }
+                                    presentBadges[badgeKey] = {misses = 0, maxDistance = maxDistance}
                                     local doorKey = door.rfidScanner or door.nfcReader or scannerName
                                     doorHoldCounts[doorKey] = (doorHoldCounts[doorKey] or 0) + 1
                                     TAC.Hardware.controlDoor(door, true)
+
+                                    -- Show welcome on displays while badge stays in range
+                                    TAC.Hardware.showIdentityOnDoorMonitor(door, identity, "granted", distance)
+                                    if door.sign then
+                                        peripheral.call(door.sign, "setSignText", "===============", "Welcome,", (identity.name or "Unknown") .. "!", "===============")
+                                    end
                                 else
                                     instance.logger.logAccess("access_denied", {
                                         identity = {
@@ -940,10 +1017,27 @@ function TAC.new(config)
                                         message = string.format("RFID access granted for %s on %s (%.1fm): Matched %s", 
                                             card.name or "Unknown", door.name or "Unknown", distance, matchReason)
                                     })
-                                    badgeGrants[badgeKey] = {door = door}
+                                    local maxDistance = computeMaxDistance(door, nil)
+
+                                    badgeGrants[badgeKey] = {
+                                        door = door,
+                                        identity = nil,
+                                        card = card,
+                                        maxDistance = maxDistance
+                                    }
+                                    presentBadges[badgeKey] = {misses = 0, maxDistance = maxDistance}
                                     local doorKey = door.rfidScanner or door.nfcReader or scannerName
                                     doorHoldCounts[doorKey] = (doorHoldCounts[doorKey] or 0) + 1
                                     TAC.Hardware.controlDoor(door, true)
+
+                                    -- Show welcome on displays while badge stays in range
+                                    TAC.Hardware.showIdentityOnDoorMonitor(door, {
+                                        name = card.name,
+                                        tags = card.tags
+                                    }, "granted", distance)
+                                    if door.sign then
+                                        peripheral.call(door.sign, "setSignText", "===============", "Welcome,", (card.name or "Unknown") .. "!", "===============")
+                                    end
                                 else
                                     instance.logger.logAccess("access_denied", {
                                         card = {
@@ -987,19 +1081,7 @@ function TAC.new(config)
                 else
                     state.misses = (state.misses or 0) + 1
                     if state.misses >= 3 then
-                        presentBadges[badgeKey] = nil
-                        local grant = badgeGrants[badgeKey]
-                        if grant and grant.door then
-                            local doorKey = grant.door.rfidScanner or grant.door.nfcReader or badgeKey
-                            if doorHoldCounts[doorKey] then
-                                doorHoldCounts[doorKey] = doorHoldCounts[doorKey] - 1
-                                if doorHoldCounts[doorKey] <= 0 then
-                                    doorHoldCounts[doorKey] = nil
-                                    TAC.Hardware.controlDoor(grant.door, false)
-                                end
-                            end
-                        end
-                        badgeGrants[badgeKey] = nil
+                        releaseBadge(badgeKey, "missed")
                     end
                 end
             end
