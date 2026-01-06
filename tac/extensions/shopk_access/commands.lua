@@ -669,23 +669,23 @@ end
 -- @param d table - display interface
 function commands.cleanupExpired(tac, d)
     local removedCount = 0
-    local cardsToRemove = {}
+    local identitiesToRemove = {}
     
-    -- Find expired cards
-    for cardId, cardData in pairs(tac.cards.getAll()) do
-        if cardData.expiration and utils.isCardExpired(cardData) then
-            table.insert(cardsToRemove, {
-                id = cardId,
-                name = cardData.name or "Unknown"
+    -- Find expired identities
+    for identityId, identity in pairs(tac.identities.getAll()) do
+        if identity.expiration and utils.isCardExpired(identity) then
+            table.insert(identitiesToRemove, {
+                id = identityId,
+                name = identity.name or "Unknown"
             })
         end
     end
     
-    -- Remove expired cards
-    for _, cardInfo in pairs(cardsToRemove) do
-        tac.cards.unset(cardInfo.id)
+    -- Remove expired identities
+    for _, identityInfo in pairs(identitiesToRemove) do
+        tac.identities.unset(identityInfo.id)
         removedCount = removedCount + 1
-        d.mess("Removed: " .. cardInfo.name)
+        d.mess("Removed: " .. identityInfo.name)
     end
     
     d.mess("Cleanup complete: " .. removedCount .. " expired cards removed")

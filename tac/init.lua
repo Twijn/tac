@@ -51,7 +51,7 @@
 ]]
 
 local TAC = {
-    version = "2.0.0",
+    version = "1.0.0",
     name = "tAC"
 }
 
@@ -104,18 +104,13 @@ function TAC.new(config)
     -- Initialize storage
     instance.settings = persist("settings.json")
     instance.doors = persist("doors.json")
-    instance.cards = persist("cards.json")  -- Legacy support
     instance.identities = persist("identities.json")
     instance.identityLookup = persist("identity_lookup.json")
     
     -- Initialize logger
     instance.logger = TAC.Logger.new(persist)
     
-    -- Initialize card manager (legacy)
-    local CardManager = require("tac.core.card_manager")
-    instance.cardManager = CardManager.create(instance)
-    
-    -- Initialize identity manager (new system)
+    -- Initialize identity manager
     local IdentityManager = require("tac.core.identity_manager")
     instance.identityManager = IdentityManager.create(instance)
     
@@ -440,11 +435,8 @@ function TAC.new(config)
                 goto continue
             end
             
-            -- Try to find identity by NFC data first (new system)
+            -- Find identity by NFC data
             local identity = instance.identityManager.findByNfc(data)
-            
-            -- Fall back to legacy card system
-            local card = instance.cards.get(data)
             local door = instance.doors.get(side)
             
             -- Also check if this side matches any door's nfcReader field
@@ -793,13 +785,10 @@ function TAC.new(config)
                             processingBadges[badgeKey] = true
                             seenThisScan[badgeKey] = true
                             
-                            -- Try to find identity by RFID data first (new system)
+                            -- Find identity by RFID data
                             local identity = instance.identityManager.findByRfid(data)
                             
-                            -- Fall back to legacy card system
-                            local card = instance.cards.get(data)
-                            
-                            -- Handle identity-based access (new system)
+                            -- Handle identity-based access
                             if identity then
                                 -- Check if RFID is enabled for this identity
                                 if not identity.rfidEnabled then
@@ -1208,17 +1197,65 @@ function TAC.new(config)
                     y = y + 1
                 end
 
-                -- Slot occupancy
+                -- Slot occupancy with regeneration timestamps
                 local slot1 = identity.nfcData and "occupied" or "empty"
                 local slot2 = identity.rfidData and "occupied" or "empty"
                 ui.drawText(2, y, "ID slot #1: " .. slot1, slot1 == "occupied" and MonitorButtons.COLORS.success or MonitorButtons.COLORS.textDim)
                 y = y + 1
+                
+                -- Show NFC regeneration timestamp if available
+                if identity.nfcRegenerated and identity.nfcData then
+                    local regenDate = os.date("!%Y-%m-%d %H:%M", identity.nfcRegenerated / 1000)
+                    ui.drawText(4, y, "Last regen: " .. regenDate, MonitorButtons.COLORS.textDim)
+                    y = y + 1
+                end
+                
                 ui.drawText(2, y, "ID slot #2: " .. slot2, slot2 == "occupied" and MonitorButtons.COLORS.success or MonitorButtons.COLORS.textDim)
                 y = y + 1
                 
-                -- Expiration
+                -- Show RFID regeneration timestamp if available
+                if identity.rfidRegenerated and identity.rfidData then
+                    local regenDate = os.date("!%Y-%m-%d %H:%M", identity.rfidRegenerated / 1000)
+                    ui.drawText(4, y, "Last regen: " .. regenDate, MonitorButtons.COLORS.textDim)
+                    y = y + 1
+                end
+                
+                -- Get card expiration threshold from settings (default: 7 days)
+                local expirationThreshold = instance.settings.get("card_expiration_threshold") or 7
+                
+                -- Card expiration warning (for NFC/RFID cards)
+                local now = os.epoch("utc")
+                local showCardExpiry = false
+                local cardDaysUntilExpiry = nil
+                
+                if identity.nfcRegenerated and identity.nfcData then
+                    local daysSinceRegen = math.floor((now - identity.nfcRegenerated) / (24 * 60 * 60 * 1000))
+                    cardDaysUntilExpiry = expirationThreshold - daysSinceRegen
+                    if daysSinceRegen >= expirationThreshold then
+                        showCardExpiry = true
+                    end
+                elseif identity.rfidRegenerated and identity.rfidData then
+                    local daysSinceRegen = math.floor((now - identity.rfidRegenerated) / (24 * 60 * 60 * 1000))
+                    cardDaysUntilExpiry = expirationThreshold - daysSinceRegen
+                    if daysSinceRegen >= expirationThreshold then
+                        showCardExpiry = true
+                    end
+                end
+                
+                if showCardExpiry then
+                    ui.drawText(2, y, "Card expired! Regenerate", MonitorButtons.COLORS.error)
+                    y = y + 1
+                    ui.drawText(2, y, "to renew access", MonitorButtons.COLORS.error)
+                    y = y + 1
+                elseif cardDaysUntilExpiry and cardDaysUntilExpiry <= 3 and cardDaysUntilExpiry > 0 then
+                    ui.drawText(2, y, "Card expires: " .. cardDaysUntilExpiry .. " days", MonitorButtons.COLORS.warning)
+                    y = y + 1
+                    ui.drawText(2, y, "Regenerate to renew", MonitorButtons.COLORS.warning)
+                    y = y + 1
+                end
+                
+                -- Identity expiration
                 if identity.expiration then
-                    local now = os.epoch("utc")
                     local remaining = identity.expiration - now
                     local days = math.floor(remaining / (24 * 60 * 60 * 1000))
                     
@@ -1488,10 +1525,8 @@ function TAC.new(config)
                     elseif identityRfid then
                         scannedSlot = "ID slot #2"
                     end
-
-                    local card = instance.cards.get(nfcData)
                     
-                    showCardInfo(identity, card, scannedSlot)
+                    showCardInfo(identity, nil, scannedSlot)
                 end
             elseif e == "nfc_write" and p1 == serverNfcName then
                 local writeSuccess = p2
@@ -1642,14 +1677,10 @@ function TAC.new(config)
         
         -- Print status information
         local doorCount = tables.count(instance.doors.getAll())
-        local cardCount = tables.count(instance.cards.getAll())
         local identityCount = tables.count(instance.identities.getAll())
         
         logLib.info("Doors loaded: " .. doorCount)
         logLib.info("Identities loaded: " .. identityCount)
-        if cardCount > 0 then
-            logLib.warn("Legacy cards loaded: " .. cardCount)
-        end
         
         logLib.info("*** " .. TAC.name .. " v" .. TAC.version .. " READY ***")
         

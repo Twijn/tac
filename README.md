@@ -94,7 +94,8 @@ After installation, your system will have the following structure:
 ├── startup.lua           # System startup script
 ├── data/                 # Persistent data storage
 │   ├── settings.json     # System configuration
-│   ├── cards.json        # User card database
+│   ├── identities.json   # User identity database
+│   ├── identity_lookup.json # Identity lookup by NFC/RFID
 │   ├── doors.json        # Door configuration
 │   └── accesslog.json    # Access attempt logs
 ├── lib/                  # Core libraries (from GitHub)
@@ -209,7 +210,7 @@ Extensions can:
 ### Runtime Issues
 - Check `logs/` directory for error logs
 - Ensure redstone connections are correct
-- Verify card data isn't corrupted in `data/cards.json`
+- Verify identity data in `data/identities.json`
 
 ### Module Issues
 - Use `wget run https://raw.githubusercontent.com/Twijn/tac/main/installer.lua list-modules` to check installation status

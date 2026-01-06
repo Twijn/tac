@@ -57,16 +57,23 @@ end
 -- @param monitorSide string - side where monitor is attached (optional, will auto-detect)
 -- @return boolean - success status
 function monitor_ui.init(tac, monitorSide)
+    -- Get configured monitor or use provided parameter
+    local configuredMonitor = tac.settings.get("shopk-purchase-monitor") or monitorSide
+    local serverMonitor = tac.settings.get("server-monitor")
+    
     -- Try to find monitor
-    if monitorSide then
-        if peripheral.getType(monitorSide) == "monitor" then
-            activeMonitor = peripheral.wrap(monitorSide)
-            activeMonitorSide = monitorSide
+    if configuredMonitor then
+        if peripheral.getType(configuredMonitor) == "monitor" then
+            activeMonitor = peripheral.wrap(configuredMonitor)
+            activeMonitorSide = configuredMonitor
+            term.setTextColor(colors.cyan)
+            print("Monitor UI: Using configured monitor on " .. configuredMonitor)
+            term.setTextColor(colors.white)
         end
     else
-        -- Auto-detect monitor
+        -- Auto-detect monitor (avoid server-monitor if configured)
         for _, side in ipairs(peripheral.getNames()) do
-            if peripheral.getType(side) == "monitor" then
+            if peripheral.getType(side) == "monitor" and side ~= serverMonitor then
                 activeMonitor = peripheral.wrap(side)
                 activeMonitorSide = side
                 term.setTextColor(colors.cyan)
@@ -214,7 +221,7 @@ function monitor_ui.showRenewalChoice(data, callback)
     activeMonitor.setCursorPos(2, 14)
     activeMonitor.write("(Recommended)")
     activeMonitor.setCursorPos(24, 14)
-    activeMonitor.write("(Requires NFC card)")
+    activeMonitor.write("(Requires card)")
     
     -- Wait for touch event
     activeSession = {
@@ -274,7 +281,7 @@ function monitor_ui.showPurchaseChoice(data, callback)
     -- Instructions
     activeMonitor.setCursorPos(2, 8)
     activeMonitor.setTextColor(colors.white)
-    activeMonitor.write("Ready to write NFC card")
+    activeMonitor.write("Ready to write ID slot #1")
     
     activeMonitor.setCursorPos(2, 9)
     activeMonitor.setTextColor(colors.lightGray)
@@ -314,13 +321,13 @@ function monitor_ui.showNFCWriting(data)
     activeMonitor.write(string.rep(" ", width))
     activeMonitor.setCursorPos(2, 1)
     activeMonitor.setTextColor(colors.black)
-    activeMonitor.write("NFC CARD WRITING")
+    activeMonitor.write("WRITING ID SLOT #1")
     
     -- Instructions
     activeMonitor.setBackgroundColor(colors.black)
     activeMonitor.setCursorPos(2, 3)
     activeMonitor.setTextColor(colors.white)
-    activeMonitor.write("Please place a blank NFC card")
+    activeMonitor.write("Please place a blank card")
     activeMonitor.setCursorPos(2, 4)
     activeMonitor.write("on the card reader...")
     

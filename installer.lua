@@ -33,8 +33,9 @@ local TAC_INSTALLER = {
     -- Default data files
     data_files = {
         "data/settings.json",
-        "data/cards.json",
         "data/doors.json",
+        "data/identities.json",
+        "data/identity_lookup.json",
         "data/accesslog.json"
     }
 }

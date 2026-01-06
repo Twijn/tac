@@ -20,12 +20,12 @@ function subscriptions.getActiveSubscriptions(tac)
     local active = {}
     local now = os.epoch("utc")
     
-    for cardId, cardData in pairs(tac.cards.getAll()) do
-        if cardData.expiration and cardData.expiration > now then
-            -- Card is active, add to subscriptions list
+    for identityId, identity in pairs(tac.identities.getAll()) do
+        if identity.expiration and identity.expiration > now then
+            -- Identity is active, add to subscriptions list
             local sub = {
-                cardId = cardId,
-                cardData = cardData,
+                cardId = identityId,
+                cardData = identity,
                 daysRemaining = utils.getDaysUntilExpiration(cardData.expiration),
                 timeRemaining = cardData.expiration - now,
                 tierPattern = nil,
@@ -61,11 +61,11 @@ function subscriptions.getExpiredSubscriptions(tac)
     local expired = {}
     local now = os.epoch("utc")
     
-    for cardId, cardData in pairs(tac.cards.getAll()) do
-        if cardData.expiration and cardData.expiration <= now then
+    for identityId, identity in pairs(tac.identities.getAll()) do
+        if identity.expiration and identity.expiration <= now then
             local sub = {
-                cardId = cardId,
-                cardData = cardData,
+                cardId = identityId,
+                cardData = identity,
                 daysExpired = math.abs(utils.getDaysUntilExpiration(cardData.expiration)),
                 expiredTime = now - cardData.expiration
             }
@@ -172,7 +172,7 @@ end
 -- @param processRefund boolean - whether to process the refund
 -- @return boolean, string, number - success, message, refund amount
 function subscriptions.cancelSubscription(tac, cardId, reason, processRefund)
-    local cardData = tac.cards.get(cardId)
+    local cardData = tac.identities.get(cardId)
     if not cardData then
         return false, "Subscription not found", 0
     end
@@ -208,8 +208,8 @@ function subscriptions.cancelSubscription(tac, cardId, reason, processRefund)
         refundAmount, refundReason = subscriptions.calculateRefund(sub, now)
     end
     
-    -- Cancel the subscription by removing the card
-    tac.cards.unset(cardId)
+    -- Cancel the subscription by removing the identity
+    tac.identities.unset(cardId)
     
     -- Log the cancellation
     tac.logger.logAccess("subscription_cancelled", {
@@ -285,14 +285,14 @@ function subscriptions.cleanupExpired(tac, maxAge)
     local removed = 0
     local toRemove = {}
     
-    for cardId, cardData in pairs(tac.cards.getAll()) do
-        if cardData.expiration and cardData.expiration < cutoff then
-            table.insert(toRemove, {id = cardId, data = cardData})
+    for identityId, identity in pairs(tac.identities.getAll()) do
+        if identity.expiration and identity.expiration < cutoff then
+            table.insert(toRemove, {id = identityId, data = identity})
         end
     end
     
     for _, item in ipairs(toRemove) do
-        tac.cards.unset(item.id)
+        tac.identities.unset(item.id)
         removed = removed + 1
         
         tac.logger.logAccess("subscription_cleanup", {

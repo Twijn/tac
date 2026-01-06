@@ -20,7 +20,8 @@ state.json
 status.json
 
 # Access control data
-cards.json
+identities.json
+identity_lookup.json
 doors.json
 access.json
 accesslog.json

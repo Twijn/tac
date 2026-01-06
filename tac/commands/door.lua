@@ -14,9 +14,9 @@ function DoorCommand.create(tac)
         local tags = {}
         local seen = {}
         
-        -- Collect tags from all cards
-        for _, cardData in pairs(tac.cards.getAll()) do
-            for _, tag in ipairs(cardData.tags or {}) do
+        -- Collect tags from all identities
+        for _, identity in pairs(tac.identities.getAll()) do
+            for _, tag in ipairs(identity.tags or {}) do
                 if not seen[tag] then
                     seen[tag] = true
                     table.insert(tags, tag)
@@ -119,13 +119,19 @@ function DoorCommand.create(tac)
                 -- Display section
                 setupForm:label("Display Config (both optional)")
                 
-                local getSign = setupForm:peripheral("Sign", "minecraft:sign", nil, 0)
-                local getMonitor = setupForm:peripheral("Monitor", "monitor", nil, 0)
+                local getSign = setupForm:peripheral("Sign", "minecraft:sign", function(v, f)
+                    return true -- Allow empty selection
+                end, 0)
+                local getMonitor = setupForm:peripheral("Monitor", "monitor", function(v, f)
+                    return true -- Allow empty selection
+                end, 0)
                 
                 -- Hardware section
                 setupForm:label("Door Control")
                 
-                local getRelay = setupForm:peripheral("Redstone Relay", "redstone_relay", nil, 0)
+                local getRelay = setupForm:peripheral("Redstone Relay", "redstone_relay", function(v, f)
+                    return true -- Allow empty selection
+                end, 0)
                 local getOpenTime = setupForm:number("Open Time (seconds)", SecurityCore.DEFAULT_OPEN_TIME, formui.validation.number_positive)
                 
                 -- RFID Distance settings
@@ -150,7 +156,9 @@ function DoorCommand.create(tac)
                 
                 local getTagsMulti
                 if #availableTags > 0 then
-                    getTagsMulti = setupForm:multiselect("Select Tags", availableTags, defaultIndices, true)  -- Make optional
+                    getTagsMulti = setupForm:multiselect("Select Tags", availableTags, defaultIndices)
+                    -- Override validation to make it optional (custom tags can be used instead)
+                    setupForm.fields[#setupForm.fields].validate = function() return true end
                 end
                 local getTagsCustom = setupForm:text("Custom Tags (comma-separated)", "", nil, true)
                 
@@ -160,8 +168,10 @@ function DoorCommand.create(tac)
 
                 if result then
                     local name = getName()
-                    local nfcReader = getNfcReader()
-                    local rfidScanner = getRfidScanner()
+                    
+                    -- Get scanner values, handling optional fields
+                    local nfcReader = pcall(getNfcReader) and getNfcReader() or ""
+                    local rfidScanner = pcall(getRfidScanner) and getRfidScanner() or ""
                     
                     -- Validate at least one scanner
                     if (not nfcReader or nfcReader == "") and (not rfidScanner or rfidScanner == "") then
@@ -200,9 +210,10 @@ function DoorCommand.create(tac)
                         tags = {"*"}
                     end
                     
-                    local sign = getSign()
-                    local monitor = getMonitor()
-                    local relay = getRelay()
+                    -- Get optional peripheral values, handling cases where they weren't selected
+                    local sign = pcall(getSign) and getSign() or ""
+                    local monitor = pcall(getMonitor) and getMonitor() or ""
+                    local relay = pcall(getRelay) and getRelay() or ""
                     local openTime = getOpenTime()
                     local maxDistance = getMaxDistance()
                     if maxDistance == 0 then maxDistance = nil end
@@ -374,7 +385,9 @@ function DoorCommand.create(tac)
                 
                 local getTagsMulti
                 if #availableTags > 0 then
-                    getTagsMulti = editForm:multiselect("Select Tags", availableTags, currentTagIndices, true)  -- Make optional
+                    getTagsMulti = editForm:multiselect("Select Tags", availableTags, currentTagIndices)
+                    -- Override validation to make it optional (custom tags can be used instead)
+                    editForm.fields[#editForm.fields].validate = function() return true end
                 end
                 
                 -- Find custom tags not in available list

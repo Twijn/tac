@@ -8,7 +8,7 @@
     
     @module tac.core.identity_manager
     @author Twijn
-    @version 2.0.0
+    @version 1.0.0
     @license MIT
     
     @example
@@ -137,6 +137,10 @@ local function create(tacInstance)
             -- Credentials (NFC data is the primary identifier)
             nfcData = opts.nfcData or nil,  -- Will be set when NFC card is written
             rfidData = opts.rfidData or (rfidEnabled and SecurityCore.randomString(64) or nil),
+            
+            -- Generation timestamps
+            nfcGenerated = opts.nfcData and os.epoch("utc") or nil,  -- Set when NFC data is provided
+            rfidGenerated = (rfidEnabled and os.epoch("utc") or nil),  -- Set when RFID data is generated
             
             -- Distance settings
             maxDistance = opts.maxDistance,  -- nil = use door setting
@@ -327,6 +331,7 @@ local function create(tacInstance)
         -- Generate new RFID data
         local newRfidData = SecurityCore.randomString(64)
         existingIdentity.rfidData = newRfidData
+        existingIdentity.rfidGenerated = os.epoch("utc")
         existingIdentity.rfidRegenerated = os.epoch("utc")
         
         -- Save and create new lookup
@@ -367,6 +372,8 @@ local function create(tacInstance)
         
         -- Set new NFC data
         existingIdentity.nfcData = nfcData
+        existingIdentity.nfcGenerated = os.epoch("utc")
+        existingIdentity.nfcRegenerated = os.epoch("utc")
         
         -- Save and create new lookup
         tac.identities.set(identityId, existingIdentity)
@@ -406,6 +413,7 @@ local function create(tacInstance)
         
         -- Set new RFID data
         existingIdentity.rfidData = rfidData
+        existingIdentity.rfidGenerated = os.epoch("utc")
         existingIdentity.rfidRegenerated = os.epoch("utc")
         
         -- Save and create new lookup
@@ -486,6 +494,9 @@ local function create(tacInstance)
             maxDistance = identity.maxDistance,
             created = identity.created,
             createdBy = identity.createdBy,
+            nfcGenerated = identity.nfcGenerated,
+            nfcRegenerated = identity.nfcRegenerated,
+            rfidGenerated = identity.rfidGenerated,
             isExpired = false,
             timeUntilExpiration = nil,
             metadata = identity.metadata or {}

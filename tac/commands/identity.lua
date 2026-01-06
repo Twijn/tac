@@ -241,6 +241,8 @@ function IdentityCommand.create(tac)
                 local getTagsMulti
                 if #availableTags > 0 then
                     getTagsMulti = createForm:multiselect("Select Tags", availableTags, {})
+                    -- Override the default validation to make it optional (custom tags can be used instead)
+                    createForm.fields[#createForm.fields].validate = function() return true end
                 end
                 local getTagsCustom = createForm:text("Custom Tags", "", nil, true)
                 
@@ -328,16 +330,16 @@ function IdentityCommand.create(tac)
                     
                     if nfcEnabled then
                         d.mess("")
-                        d.mess("Right-click NFC card to program it.")
-                        d.mess("Press 'q' to skip NFC programming.")
+                        d.mess("Right-click card to program ID slot #1.")
+                        d.mess("Press 'q' to skip card programming.")
                         
                         showIdentityOnMonitor(identityData, "scanning")
                         
                         -- Get server NFC reader
                         local serverNfc = tac.getServerNfc()
                         if not serverNfc then
-                            d.err("No server NFC reader configured!")
-                            d.mess("NFC card must be programmed manually later.")
+                            d.err("No server card reader configured!")
+                            d.mess("Card must be programmed manually later.")
                         else
                             serverNfc.write(nfcData, identityName)
                             
@@ -345,16 +347,16 @@ function IdentityCommand.create(tac)
                                 local e = table.pack(os.pullEvent())
                                 
                                 if e[1] == "nfc_write" and e[2] == peripheral.getName(serverNfc) then
-                                    -- NFC card written successfully
+                                    -- Card written successfully
                                     tac.identityManager.setNfcData(identityData.id, nfcData)
                                     
                                     showIdentityOnMonitor(identityData, "created")
                                     d.mess("")
-                                    d.mess("NFC card programmed successfully!")
+                                    d.mess("Card (ID slot #1) programmed successfully!")
                                     break
                                 elseif e[1] == "key" and e[2] == keys.q then
                                     serverNfc.cancelWrite()
-                                    d.mess("NFC programming skipped.")
+                                    d.mess("Card programming skipped.")
                                     break
                                 end
                             end
@@ -468,12 +470,28 @@ function IdentityCommand.create(tac)
                         if identity.nfcEnabled then
                             local nfcStatus = identity.nfcData and "Programmed" or "Needs Card"
                             table.insert(details, "NFC: Enabled (" .. nfcStatus .. ")")
+                            if identity.nfcGenerated then
+                                local nfcDate = os.date("!%Y-%m-%d %H:%M", identity.nfcGenerated / 1000)
+                                table.insert(details, "  Generated: " .. nfcDate)
+                            end
+                            if identity.nfcRegenerated and identity.nfcRegenerated ~= identity.nfcGenerated then
+                                local nfcRegenDate = os.date("!%Y-%m-%d %H:%M", identity.nfcRegenerated / 1000)
+                                table.insert(details, "  Last Regen: " .. nfcRegenDate)
+                            end
                         else
                             table.insert(details, "NFC: Disabled")
                         end
                         if identity.rfidEnabled then
                             table.insert(details, "RFID: Enabled")
                             table.insert(details, "  Code: " .. SecurityCore.truncateCardId(identity.rfidData or "none"))
+                            if identity.rfidGenerated then
+                                local rfidDate = os.date("!%Y-%m-%d %H:%M", identity.rfidGenerated / 1000)
+                                table.insert(details, "  Generated: " .. rfidDate)
+                            end
+                            if identity.rfidRegenerated and identity.rfidRegenerated ~= identity.rfidGenerated then
+                                local rfidRegenDate = os.date("!%Y-%m-%d %H:%M", identity.rfidRegenerated / 1000)
+                                table.insert(details, "  Last Regen: " .. rfidRegenDate)
+                            end
                         else
                             table.insert(details, "RFID: Disabled")
                         end
@@ -714,7 +732,7 @@ function IdentityCommand.create(tac)
                 
                 if not identityName or identityName == "" then
                     d.err("Usage: identity nfc <identity_name>")
-                    d.mess("Programs an NFC card for an existing identity")
+                    d.mess("Programs ID slot #1 for an existing identity")
                     return
                 end
                 
@@ -741,15 +759,15 @@ function IdentityCommand.create(tac)
                 
                 local serverNfc = tac.getServerNfc()
                 if not serverNfc then
-                    d.err("No server NFC reader configured!")
+                    d.err("No server card reader configured!")
                     return
                 end
                 
                 -- Generate new NFC data
                 local nfcData = SecurityCore.randomString(128)
                 
-                d.mess("Programming NFC card for: " .. identityName)
-                d.mess("Right-click NFC card to program. Press 'q' to cancel.")
+                d.mess("Programming ID slot #1 for: " .. identityName)
+                d.mess("Right-click card to program. Press 'q' to cancel.")
                 
                 showIdentityOnMonitor(targetIdentity, "scanning")
                 serverNfc.write(nfcData, identityName)
@@ -760,7 +778,7 @@ function IdentityCommand.create(tac)
                     if e[1] == "nfc_write" and e[2] == peripheral.getName(serverNfc) then
                         tac.identityManager.setNfcData(targetIdentityId, nfcData)
                         showIdentityOnMonitor(targetIdentity, "created")
-                        d.mess("NFC card programmed successfully!")
+                        d.mess("Card (ID slot #1) programmed successfully!")
                         sleep(2)
                         clearMonitor()
                         break
@@ -780,7 +798,7 @@ function IdentityCommand.create(tac)
                     return
                 end
                 
-                d.mess("Tap an NFC card to identify...")
+                d.mess("Tap a card to identify...")
                 d.mess("Press 'q' to cancel.")
                 
                 showIdentityOnMonitor(nil, "scanning")

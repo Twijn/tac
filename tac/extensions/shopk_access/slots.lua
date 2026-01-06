@@ -47,14 +47,14 @@ function slots.getAvailableSlots(tac, pattern)
     local availableSlots = {}
     local occupiedSlots = {}
     
-    -- Check which tags have active (non-expired) cards
-    for cardId, cardData in pairs(tac.cards.getAll()) do
-        if cardData.tags then
-            for _, tag in ipairs(cardData.tags) do
-                if allTags[tag] and (not cardData.expiration or not utils.isCardExpired(cardData)) then
+    -- Check which tags have active (non-expired) identities
+    for identityId, identity in pairs(tac.identities.getAll()) do
+        if identity.tags then
+            for _, tag in ipairs(identity.tags) do
+                if allTags[tag] and (not identity.expiration or not utils.isCardExpired(identity)) then
                     occupiedSlots[tag] = {
-                        id = cardId,
-                        data = cardData,
+                        id = identityId,
+                        data = identity,
                         tag = tag
                     }
                 end

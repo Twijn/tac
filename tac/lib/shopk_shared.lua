@@ -98,14 +98,14 @@ function shopk_shared.getAvailableSlots(tac, pattern)
     local allTags = {}
     local occupiedTags = {}
     
-    -- Find all matching tags in cards and doors
-    for cardId, cardData in pairs(tac.cards.getAll()) do
-        if cardData.tags then
-            for _, tag in ipairs(cardData.tags) do
+    -- Find all matching tags in identities and doors
+    for identityId, identity in pairs(tac.identities.getAll()) do
+        if identity.tags then
+            for _, tag in ipairs(identity.tags) do
                 if tag:match(pattern_regex) then
                     allTags[tag] = true
                     -- Check if occupied (non-expired)
-                    if not cardData.expiration or os.epoch("utc") <= cardData.expiration then
+                    if not identity.expiration or os.epoch("utc") <= identity.expiration then
                         occupiedTags[tag] = true
                     end
                 end

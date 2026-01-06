@@ -268,12 +268,12 @@ end
 -- @param transaction table - transaction data
 -- @param username string - player username
 function shop_handler.handleRenewal(tac, transaction, username)
-    -- Find cards belonging to this user
+    -- Find identities belonging to this user
     local userCards = {}
-    for cardId, cardData in pairs(tac.cards.getAll()) do
-        if cardData.name and cardData.name:lower():find(username:lower()) then
-            cardData.id = cardId
-            table.insert(userCards, cardData)
+    for identityId, identity in pairs(tac.identities.getAll()) do
+        if identity.name and identity.name:lower():find(username:lower()) then
+            identity.id = identityId
+            table.insert(userCards, identity)
         end
     end
     
@@ -354,9 +354,9 @@ function shop_handler.handleRenewal(tac, transaction, username)
         print("")
         print("Choose renewal option:")
         print("1. Renew existing card data only (recommended)")
-        print("2. Write new NFC card with renewed access")
+        print("2. Write new card (ID slot #1) with renewed access")
         print("")
-        print("Press '1' for data renewal, '2' for new NFC card, or 'q' to cancel:")
+        print("Press '1' for data renewal, '2' for new card, or 'q' to cancel:")
         
         while choice == nil do
             local event, key = os.pullEvent("key")
@@ -388,42 +388,42 @@ function shop_handler.handleRenewal(tac, transaction, username)
     end
     
     if choice == "data" then
-        -- Standard renewal - just update the card data
-        local renewedCard, error = tac.cardManager.renewCard(targetCard.id, tier.duration, {
+        -- Standard renewal - just update the identity data
+        local renewedIdentity, error = tac.identityManager.renewIdentity(targetCard.id, tier.duration, {
             renewedBy = "shopk",
             transactionId = transaction.id,
-            logMessage = "Card renewed via ShopK: " .. accessTag .. " for " .. username .. " (" .. transaction.value .. " KRO)"
+            logMessage = "Identity renewed via ShopK: " .. accessTag .. " for " .. username .. " (" .. transaction.value .. " KRO)"
         })
 
-        if not renewedCard then
+        if not renewedIdentity then
             term.setTextColor(colors.red)
-            print("Failed to renew card: " .. (error or "Unknown error"))
+            print("Failed to renew identity: " .. (error or "Unknown error"))
             term.setTextColor(colors.white)
             if monitor_ui.isAvailable() then
-                monitor_ui.showError("Failed to renew card: " .. (error or "Unknown error"))
+                monitor_ui.showError("Failed to renew identity: " .. (error or "Unknown error"))
                 os.sleep(3)
             end
             return
         end
 
         term.setTextColor(colors.lime)
-        print("Card data renewed successfully!")
+        print("Identity data renewed successfully!")
         print("Player: " .. username)
         print("Access Level: " .. accessTag)
-        print("New Expiration: " .. utils.formatExpiration(renewedCard.expiration))
+        print("New Expiration: " .. utils.formatExpiration(renewedIdentity.expiration))
         term.setTextColor(colors.white)
         
         if monitor_ui.isAvailable() then
-            monitor_ui.showSuccess("Card renewed successfully!", {
+            monitor_ui.showSuccess("Identity renewed successfully!", {
                 ["Player"] = username,
                 ["Access"] = accessTag,
-                ["Expires"] = utils.formatExpiration(renewedCard.expiration)
+                ["Expires"] = utils.formatExpiration(renewedIdentity.expiration)
             })
             -- Timer will auto-clear after 5 seconds
         end
         
     elseif choice == "nfc" then
-        -- Write new NFC card with renewed access
+        -- Write new card (ID slot #1) with renewed access
         local success = shop_handler.writeRenewalNFCCard(tac, {
             username = username,
             accessTag = accessTag,
@@ -434,10 +434,10 @@ function shop_handler.handleRenewal(tac, transaction, username)
         
         if not success then
             term.setTextColor(colors.red)
-            print("Failed to write new NFC card for renewal!")
+            print("Failed to write new card for renewal!")
             term.setTextColor(colors.white)
             if monitor_ui.isAvailable() then
-                monitor_ui.showError("Failed to write new NFC card for renewal!")
+                monitor_ui.showError("Failed to write new card for renewal!")
                 os.sleep(3)
             end
             return
@@ -494,9 +494,9 @@ function shop_handler.handleNewSubscription(tac, transaction, sku, username)
         return
     end
     
-    -- Start NFC card writing process
+    -- Start card writing process
     term.setTextColor(colors.cyan)
-    print("=== NFC Card Writing Process ===")
+    print("=== Card Writing Process (ID slot #1) ===")
     print("Purchase confirmed for " .. username)
     print("Access Level: " .. nextSlot)
     print("Duration: " .. tier.duration .. " days")
@@ -544,22 +544,22 @@ function shop_handler.handleNewSubscription(tac, transaction, sku, username)
     
     if not success then
         term.setTextColor(colors.red)
-        print("Failed to create NFC card for " .. username)
+        print("Failed to create card for " .. username)
         print("Transaction completed but card creation failed!")
         term.setTextColor(colors.white)
         if monitor_ui.isAvailable() then
-            monitor_ui.showError("Failed to create NFC card. Transaction completed but card creation failed!")
+            monitor_ui.showError("Failed to create card. Transaction completed but card creation failed!")
             os.sleep(3)
         end
         return
     end
     
     term.setTextColor(colors.lime)
-    print("NFC card successfully created and activated!")
+    print("Card successfully created and activated!")
     term.setTextColor(colors.white)
     
     if monitor_ui.isAvailable() then
-        monitor_ui.showSuccess("NFC card created successfully!", {
+        monitor_ui.showSuccess("Card created successfully!", {
             ["Player"] = username,
             ["Access"] = nextSlot,
             ["Duration"] = tier.duration .. " days"
@@ -646,12 +646,12 @@ function shop_handler.writeNFCCard(tac, options)
     
     term.setTextColor(colors.yellow)
     if isResume then
-        print("Resuming NFC write for card ID: " .. SecurityCore.truncateCardId(cardId))
+        print("Resuming card write for ID: " .. SecurityCore.truncateCardId(cardId))
     else
         print("Generated card ID: " .. SecurityCore.truncateCardId(cardId))
     end
     print("")
-    print("Please place a blank NFC card on the server NFC reader...")
+    print("Please place a blank card on the server card reader...")
     print("Press 'q' to cancel the card writing process.")
     term.setTextColor(colors.white)
     
@@ -709,7 +709,7 @@ function shop_handler.writeNFCCard(tac, options)
         -- Check for successful NFC write
         if event == "nfc_write" and param1 == peripheral.getName(serverNfc) then
             term.setTextColor(colors.lime)
-            print("✓ NFC card written successfully!")
+            print("✓ Card written successfully!")
             term.setTextColor(colors.white)
             writeSuccessful = true
             break
@@ -741,49 +741,55 @@ function shop_handler.writeNFCCard(tac, options)
                 os.sleep(3)
             end
             -- Issue refund for timeout
-            refundWithError(transaction, "NFC card write timeout - no card placed within 30 seconds")
+            refundWithError(transaction, "Card write timeout - no card placed within 30 seconds")
             return false
             
         -- Check for NFC write error
         elseif event == "nfc_write_error" then
             term.setTextColor(colors.red)
-            print("NFC write error: " .. tostring(param2))
+            print("Card write error: " .. tostring(param2))
             term.setTextColor(colors.white)
             nfcWriteState.unset("active")  -- Clear persisted state
             if monitor_ui.isAvailable() then
-                monitor_ui.showError("NFC write error: " .. tostring(param2))
+                monitor_ui.showError("Card write error: " .. tostring(param2))
                 os.sleep(3)
             end
-            refundWithError(transaction, "NFC write error: " .. tostring(param2))
+            refundWithError(transaction, "Card write error: " .. tostring(param2))
             return false
         end
     end
     
-    -- If NFC write was successful, save the card data
+    -- If NFC write was successful, save the identity data
     if writeSuccessful then
         -- Clear persisted write state
         nfcWriteState.unset("active")
         
-        -- Save card using centralized card manager
-        local savedCard, error = tac.cardManager.createCard({
-            id = cardId,
-            name = cardData.name,
-            tags = cardData.tags,
-            expiration = cardData.expiration,
-            username = cardData.username,
-            createdBy = cardData.createdBy,
-            metadata = cardData.metadata,
-            logMessage = "ShopK NFC card created: " .. slot .. " for " .. username .. " expires " .. utils.formatExpiration(expiration) .. " (" .. transaction.value .. " KRO)"
+        -- Save identity using centralized identity manager
+        local savedIdentity, error = tac.identityManager.createSubscriptionIdentity({
+            username = username,
+            duration = tier.duration,
+            slot = slot,
+            nfcEnabled = true,
+            rfidEnabled = true,
+            createdBy = "shopk",
+            purchaseValue = transaction.value,
+            transactionId = transaction.id,
+            logMessage = "ShopK subscription identity created: " .. slot .. " for " .. username .. " expires " .. utils.formatExpiration(expiration) .. " (" .. transaction.value .. " KRO)"
         })
         
-        if not savedCard then
+        -- Associate the NFC data with the identity
+        if savedIdentity then
+            tac.identityManager.setNfcData(savedIdentity.id, cardId)
+        end
+        
+        if not savedIdentity then
             term.setTextColor(colors.red)
-            print("ERROR: Card was written to NFC but failed to save to database!")
+            print("ERROR: Card was written but failed to save to database!")
             print("Error: " .. (error or "Unknown error"))
             print("Card ID: " .. SecurityCore.truncateCardId(cardId))
             term.setTextColor(colors.white)
             if monitor_ui.isAvailable() then
-                monitor_ui.showError("Card written to NFC but failed to save to database: " .. (error or "Unknown error"))
+                monitor_ui.showError("Card written but failed to save to database: " .. (error or "Unknown error"))
                 os.sleep(3)
             end
             -- Note: No refund here since card was physically written
@@ -792,7 +798,7 @@ function shop_handler.writeNFCCard(tac, options)
         
         -- Display success information
         term.setTextColor(colors.lime)
-        print("=== Card Creation Successful ===")
+        print("=== Identity Creation Successful ===")
         print("Player: " .. username)
         print("Access Level: " .. slot)
         print("Card ID: " .. SecurityCore.truncateCardId(cardId))
@@ -800,7 +806,7 @@ function shop_handler.writeNFCCard(tac, options)
         print("Valid for: " .. tier.duration .. " days")
         print("Cost: " .. transaction.value .. " KRO")
         print("")
-        print("The NFC card is now ready to use!")
+        print("The card (ID slot #1) is now ready to use!")
         term.setTextColor(colors.white)
         
         -- Note: Success message already shown in handleNewSubscription
@@ -938,14 +944,19 @@ function shop_handler.writeRenewalNFCCard(tac, options)
         -- Clear persisted write state
         nfcWriteState.unset("active")
         
-        -- Remove old card and create new one
-        tac.cards.unset(originalCard.id)
+        -- Delete old identity and create new one with renewed access
+        tac.identityManager.deleteIdentity(originalCard.id)
         
-        -- Create new card with renewed access
-        local newCard, error = tac.cardManager.createCard({
-            id = newCardId,
+        -- Calculate new expiration
+        local newExpiration = originalCard.expiration + (tier.duration * 24 * 60 * 60 * 1000)
+        
+        -- Create new identity with renewed access
+        local newIdentity, error = tac.identityManager.createIdentity({
+            id = slot .. "_" .. username:gsub("%s+", "_"):lower(),
             name = username .. " (" .. accessTag .. " - Renewed)",
             tags = originalCard.tags,
+            nfcEnabled = true,
+            rfidEnabled = true,
             expiration = newExpiration,
             username = username,
             createdBy = "shopk_renewal",
@@ -957,10 +968,15 @@ function shop_handler.writeRenewalNFCCard(tac, options)
                 renewedFrom = originalCard.expiration,
                 fromAddress = transaction.from
             },
-            logMessage = "Renewal NFC card created: " .. accessTag .. " for " .. username .. " expires " .. utils.formatExpiration(newExpiration) .. " (" .. transaction.value .. " KRO)"
+            logMessage = "Renewal NFC identity created: " .. accessTag .. " for " .. username .. " expires " .. utils.formatExpiration(newExpiration) .. " (" .. transaction.value .. " KRO)"
         })
         
-        if not newCard then
+        -- Associate the NFC data with the identity
+        if newIdentity then
+            tac.identityManager.setNfcData(newIdentity.id, newCardId)
+        end
+        
+        if not newIdentity then
             term.setTextColor(colors.red)
             print("ERROR: NFC card written but failed to save renewal data!")
             print("Error: " .. (error or "Unknown error"))
@@ -973,7 +989,7 @@ function shop_handler.writeRenewalNFCCard(tac, options)
         end
         
         term.setTextColor(colors.lime)
-        print("=== Renewal NFC Card Created ===")
+        print("=== Renewal NFC Identity Created ===")
         print("Player: " .. username)
         print("Access Level: " .. accessTag)
         print("New Card ID: " .. SecurityCore.truncateCardId(newCardId))
