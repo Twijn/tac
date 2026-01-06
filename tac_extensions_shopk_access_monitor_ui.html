@@ -163,23 +163,23 @@
     <h2>Functions</h2>
     <div class='function'>
         <h3><code>monitor_ui.isInUse()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L21' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L28' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Check if monitor is currently in use (showing interactive UI)</p>
         <div class='returns'><strong>Returns:</strong> boolean - true if monitor is showing interactive screens</div>
     </div>
     <div class='function'>
         <h3><code>monitor_ui.lock()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L27' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L34' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Lock the monitor (set isInUse flag) to prevent shop_monitor updates This should be called at the start of a transaction flow</p>
     </div>
     <div class='function'>
         <h3><code>monitor_ui.unlock()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L33' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L42' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Unlock the monitor (clear isInUse flag) to allow shop_monitor updates Note: clearSession() also unlocks</p>
     </div>
     <div class='function'>
         <h3><code>monitor_ui.init(tac, monitorSide)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L39' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L55' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Initialize monitor UI</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -192,7 +192,7 @@
     </div>
     <div class='function'>
         <h3><code>monitor_ui.showRenewalChoice(data, callback)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L138' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L161' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Show renewal choice screen</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -204,7 +204,7 @@
     </div>
     <div class='function'>
         <h3><code>monitor_ui.showPurchaseChoice(data, callback)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L218' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L241' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Show new purchase choice screen</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -216,7 +216,7 @@
     </div>
     <div class='function'>
         <h3><code>monitor_ui.showNFCWriting(data)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L285' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L308' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Show NFC card writing progress screen</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -227,7 +227,7 @@
     </div>
     <div class='function'>
         <h3><code>monitor_ui.showSuccess(message, details)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L332' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L355' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Show success screen</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -239,7 +239,7 @@
     </div>
     <div class='function'>
         <h3><code>monitor_ui.showError(message)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L381' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L404' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Show error screen</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -250,7 +250,7 @@
     </div>
     <div class='function'>
         <h3><code>monitor_ui.handleTouch(x, y)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L441' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L464' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Handle touch events</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -262,7 +262,7 @@
     </div>
     <div class='function'>
         <h3><code>monitor_ui.handleTimer(timerID)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L488' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L510' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Handle timer events for clearing screens</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -273,7 +273,7 @@
     </div>
     <div class='function'>
         <h3><code>monitor_ui.startTouchListener(tac)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L497' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L519' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Start touch listener in background</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -284,23 +284,23 @@
     </div>
     <div class='function'>
         <h3><code>monitor_ui.stopTouchListener()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L529' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L551' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Stop touch listener</p>
     </div>
     <div class='function'>
         <h3><code>monitor_ui.clearSession()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L534' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L556' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Clear active session and return to default screen</p>
     </div>
     <div class='function'>
         <h3><code>monitor_ui.isAvailable()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L541' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L563' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Check if monitor UI is available</p>
         <div class='returns'><strong>Returns:</strong> boolean</div>
     </div>
     <div class='function'>
         <h3><code>monitor_ui.getMonitor()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L547' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/extensions/shopk_access/monitor_ui.lua#L569' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Get active monitor</p>
         <div class='returns'><strong>Returns:</strong> table - monitor peripheral or nil</div>
     </div>

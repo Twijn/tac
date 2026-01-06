@@ -189,20 +189,20 @@
     
     <h2>Core Modules</h2>
     <div class="module">
-        <h3><a href="tac_core_card_manager.html">tac.core.card_manager</a><span class="version-badge">v1.0.1</span></h3>
-        <p>Provides consistent card creation, validation, and management APIs. Handles standard card creation, subscription cards with expiration, card renewal, and card information queries.</p>
-    </div>
-    <div class="module">
         <h3><a href="tac_core_extension_loader.html">tac.core.extension_loader</a><span class="version-badge">v1.0.1</span></h3>
         <p>Provides robust extension loading with dependency management, error handling, and graceful degradation. Supports extension metadata, version checking, and load order resolution based on dependencies.</p>
     </div>
     <div class="module">
-        <h3><a href="tac_core_hardware.html">tac.core.hardware</a><span class="version-badge">v1.0.1</span></h3>
-        <p>Handles peripheral detection, door control, and sign updates for the TAC system. Provides utilities for finding and interacting with ComputerCraft peripherals.</p>
+        <h3><a href="tac_core_hardware.html">tac.core.hardware</a><span class="version-badge">v1.1.0</span></h3>
+        <p>Handles peripheral detection, door control, and sign updates for the TAC system. Provides utilities for finding and interacting with ComputerCraft peripherals. Supports NFC readers, RFID scanners, mon...</p>
     </div>
     <div class="module">
-        <h3><a href="tac_core_logger.html">tac.core.logger</a><span class="version-badge">v1.0.1</span></h3>
-        <p>Handles all access logging functionality for the TAC system. Logs access events, card creation, and other security-related activities.</p>
+        <h3><a href="tac_core_identity_manager.html">tac.core.identity_manager</a><span class="version-badge">v1.0.0</span></h3>
+        <p>Provides consistent identity creation, validation, and management APIs. An "identity" represents a user with separate NFC and RFID credentials. NFC cards are high-security (require physical tap), whil...</p>
+    </div>
+    <div class="module">
+        <h3><a href="tac_core_logger.html">tac.core.logger</a><span class="version-badge">v1.1.0</span></h3>
+        <p>Handles all access logging functionality for the TAC system. Logs access events, card creation, and other security-related activities. Uses lib/log.lua for file logging with automatic daily rotation.</p>
     </div>
     <div class="module">
         <h3><a href="tac_core_security.html">tac.core.security</a><span class="version-badge">v1.0.1</span></h3>
@@ -214,6 +214,10 @@
         <p>Provides an interactive list UI with keyboard navigation for browsing items. Supports arrow key navigation, detail view, and customizable rendering.</p>
     </div>
     <div class="module">
+        <h3><a href="tac_lib_monitor_buttons.html">tac.lib.monitor_buttons</a><span class="version-badge">v1.0.0</span></h3>
+        <p>Provides reusable button UI components for monitor-based interfaces. Used by server NFC monitor, ShopK access, and other monitor-based UIs.</p>
+    </div>
+    <div class="module">
         <h3><a href="tac_lib_shopk_shared.html">tac.lib.shopk_shared</a></h3>
         <p>Get the current ShopK configuration</p>
     </div>
@@ -223,12 +227,16 @@
         <p></p>
     </div>
     <div class="module">
-        <h3><a href="tac_init.html">tac.init</a><span class="version-badge">v1.4.3</span></h3>
-        <p>The main package interface for the TAC access control system. This module provides the core functionality for managing card-based access control, including extension management, command registration, ...</p>
+        <h3><a href="tac_init.html">tac.init</a><span class="version-badge">v2.0.0</span></h3>
+        <p>The main package interface for the TAC access control system. This module provides the core functionality for managing identity-based access control, including extension management, command registrati...</p>
     </div>
     <div class="module">
         <h3><a href="tac_lib_interactive_list.html">tac.lib.interactive_list</a><span class="version-badge">v1.0.3</span></h3>
         <p>Provides an interactive list UI with keyboard navigation for browsing items. Supports arrow key navigation, detail view, and customizable rendering.</p>
+    </div>
+    <div class="module">
+        <h3><a href="tac_lib_monitor_buttons.html">tac.lib.monitor_buttons</a><span class="version-badge">v1.0.0</span></h3>
+        <p>Provides reusable button UI components for monitor-based interfaces. Used by server NFC monitor, ShopK access, and other monitor-based UIs.</p>
     </div>
     <div class="module">
         <h3><a href="tac_lib_shopk_shared.html">tac.lib.shopk_shared</a></h3>

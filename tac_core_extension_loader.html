@@ -171,7 +171,7 @@ local success, errors = loader.loadFromDirectory("tac/extensions")
 -- Check loaded extensions
 local loaded = loader.getLoadedExtensions()
 for name, metadata in pairs(loaded) do
-    print(name .. " v" .. metadata.version)
+    log.debug(name .. " v" .. metadata.version)
 end
 
 -- Load specific extension
@@ -179,7 +179,7 @@ local ext, err = loader.loadExtension("shopk_access", "tac/extensions/shopk_acce
     <h2>Functions</h2>
     <div class='function'>
         <h3><code>ExtensionLoader.create(tacInstance)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/extension_loader.lua#L154' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/extension_loader.lua#L156' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Create extension loader for TAC instance  Returns a loader interface with methods for discovering, loading, and managing extensions. </p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -191,7 +191,7 @@ local ext, err = loader.loadExtension("shopk_access", "tac/extensions/shopk_acce
     </div>
     <div class='function'>
         <h3><code>loader.loadFromDirectory(options)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/extension_loader.lua#L165' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/extension_loader.lua#L167' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Load extensions from directory  Discovers and loads all extensions from the extensions directory, respecting dependencies and handling errors gracefully.  - directory (string): Extension directory path (default: "tac/extensions") - skipPrefixes (table): Array of filename prefixes to skip (default: {"_", "disabled_"}) - silent (boolean): Suppress output messages (default: false) - loaded (table): Array of successfully loaded extension names - failed (table): Array of objects with name and error for failed extensions - skipped (table): Array of skipped extension names</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -203,7 +203,7 @@ local ext, err = loader.loadExtension("shopk_access", "tac/extensions/shopk_acce
     </div>
     <div class='function'>
         <h3><code>loader.loadExtension(extensionName, options)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/extension_loader.lua#L332' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/extension_loader.lua#L320' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Load a specific extension by name  Loads a single extension from the extensions directory.  - directory (string): Extension directory path (default: "tac/extensions") - silent (boolean): Suppress output messages (default: false)</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -216,7 +216,7 @@ local ext, err = loader.loadExtension("shopk_access", "tac/extensions/shopk_acce
     </div>
     <div class='function'>
         <h3><code>loader.getLoadedExtensions()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/extension_loader.lua#L396' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/extension_loader.lua#L376' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Get information about loaded extensions  Returns metadata for all currently loaded extensions. </p>
         <div class='returns'><strong>Returns:</strong> table Array of extension metadata objects</div>
     </div>

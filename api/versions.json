@@ -1,29 +1,29 @@
 {
   "tac": {
-    "version": "1.4.3",
+    "version": "2.0.0",
     "init": {
-      "version": "1.4.3",
+      "version": "2.0.0",
       "path": "tac/init.lua",
       "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/init.lua"
     },
     "core": {
-      "card_manager": {
-        "version": "1.0.1",
-        "path": "tac/core/card_manager.lua",
-        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/core/card_manager.lua"
-      },
       "extension_loader": {
         "version": "1.0.1",
         "path": "tac/core/extension_loader.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/core/extension_loader.lua"
       },
       "hardware": {
-        "version": "1.0.1",
+        "version": "1.1.0",
         "path": "tac/core/hardware.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/core/hardware.lua"
       },
+      "identity_manager": {
+        "version": "1.0.0",
+        "path": "tac/core/identity_manager.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/core/identity_manager.lua"
+      },
       "logger": {
-        "version": "1.0.1",
+        "version": "1.1.0",
         "path": "tac/core/logger.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/core/logger.lua"
       },
@@ -38,6 +38,11 @@
         "version": "1.0.3",
         "path": "tac/lib/interactive_list.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/lib/interactive_list.lua"
+      },
+      "monitor_buttons": {
+        "version": "1.0.0",
+        "path": "tac/lib/monitor_buttons.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/lib/monitor_buttons.lua"
       },
       "shopk_shared": {
         "version": null,
@@ -61,15 +66,20 @@
         "path": "tac/commands/door.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/commands/door.lua"
       },
-      "card": {
+      "identity": {
         "version": "0.0.0",
-        "path": "tac/commands/card.lua",
-        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/commands/card.lua"
+        "path": "tac/commands/identity.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/commands/identity.lua"
       },
       "processes": {
         "version": "0.0.0",
         "path": "tac/commands/processes.lua",
         "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/commands/processes.lua"
+      },
+      "settings": {
+        "version": "0.0.0",
+        "path": "tac/commands/settings.lua",
+        "download_url": "https://raw.githubusercontent.com/Twijn/tac/main/tac/commands/settings.lua"
       }
     },
     "extensions": {

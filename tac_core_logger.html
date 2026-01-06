@@ -155,8 +155,8 @@
 <body>
     <div class="back-link"><a href="index.html">← Back to index</a></div>
     <div class="header">
-        <h1>tac.core.logger <span class="version-badge">v1.0.1</span></h1>
-        <p>Handles all access logging functionality for the TAC system. Logs access events, card creation, and other security-related activities.</p>
+        <h1>tac.core.logger <span class="version-badge">v1.1.0</span></h1>
+        <p>Handles all access logging functionality for the TAC system. Logs access events, card creation, and other security-related activities. Uses lib/log.lua for file logging with automatic daily rotation.</p>
         <div class='metadata'> Author: Twijn</div>
         <a href="https://github.com/Twijn/tac/blob/main/tac/core/logger.lua" class="github-link" target="_blank">View on GitHub →</a>
     </div>
@@ -188,12 +188,12 @@ end</code></pre>
     <h2>Functions</h2>
     <div class='function'>
         <h3><code>MyExtension.init()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L12' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L13' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>In your extension:</p>
     </div>
     <div class='function'>
         <h3><code>AccessLogger.new(persistBackend)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L40' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L42' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Initialize the logger with a persistent storage backend  Creates a new logger instance that stores logs in persistent storage. The logger provides methods for recording access events and retrieving statistics. </p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -205,8 +205,8 @@ end</code></pre>
     </div>
     <div class='function'>
         <h3><code>logger.logAccess(eventType, options)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L52' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
-        <p>Log an access event  Records an access event with details about the card, door, and outcome. Events are stored with timestamps and can be retrieved for auditing.  - message (string): Human-readable message - card (table): Card info with id, name, tags - door (table): Door info with name, tags - matched_tag (string): Tag that granted access - reason (string): Reason for denial or other outcome</p>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L54' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Log an access event  Records an access event with details about the card, door, and outcome. Events are stored with timestamps and can be retrieved for auditing. Also writes to daily log files via lib/log.lua  - message (string): Human-readable message - card (table): Card info with id, name, tags - door (table): Door info with name, tags - matched_tag (string): Tag that granted access - reason (string): Reason for denial or other outcome</p>
         <div class='params'>
             <strong>Parameters:</strong>
             <ul>
@@ -217,24 +217,24 @@ end</code></pre>
     </div>
     <div class='function'>
         <h3><code>logger.getAllLogs()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L103' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L127' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Get all access logs  Returns all logged events ordered chronologically. </p>
         <div class='returns'><strong>Returns:</strong> table Array of log entry objects with timestamp, type, message, card, door, etc.</div>
     </div>
     <div class='function'>
         <h3><code>logger.clearLogs()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L113' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L137' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Clear all access logs  Permanently deletes all logged events. Use with caution. </p>
     </div>
     <div class='function'>
         <h3><code>logger.getStats()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L122' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L146' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Get access log statistics  Returns statistics about logged events including totals for each event type.  - total (number): Total number of events - access_granted (number): Count of successful accesses - access_denied (number): Count of denied accesses - card_created (number): Count of created cards - card_creation_cancelled (number): Count of cancelled card creations</p>
         <div class='returns'><strong>Returns:</strong> table Statistics object with fields:</div>
     </div>
     <div class='function'>
         <h3><code>logger.formatTimestamp(timestamp)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L152' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/logger.lua#L176' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Format timestamp for display</p>
         <div class='params'>
             <strong>Parameters:</strong>

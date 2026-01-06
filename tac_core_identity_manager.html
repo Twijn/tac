@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tac.core.identity_manager - TAC Documentation</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #1a1a1a;
+            --link: #0066cc;
+            --border: #e0e0e0;
+            --code-bg: #f5f5f5;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1a1a1a;
+                --text: #e0e0e0;
+                --link: #4d9fff;
+                --border: #333333;
+                --code-bg: #2a2a2a;
+            }
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+        }
+        .header p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            opacity: 0.9;
+        }
+        .metadata {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 0.5rem;
+        }
+        h2 {
+            margin-top: 3rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 1.8rem;
+        }
+        h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 1.3rem;
+        }
+        code {
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        .function:not(.token) {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+        .function h3 {
+            margin-top: 0;
+        }
+        .function > p {
+            margin: 1rem 0;
+            line-height: 1.7;
+        }
+        .params, .returns {
+            margin-top: 1rem;
+        }
+        .params ul, .returns ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .params li, .returns li {
+            padding: 0.5rem 0;
+            padding-left: 1rem;
+            border-left: 3px solid var(--border);
+            margin: 0.25rem 0;
+        }
+        a {
+            color: var(--link);
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .back-link {
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+        .version-badge {
+            display: inline-block;
+            background: #2a3540;
+            color: #8b949e;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.75em;
+            font-weight: 500;
+            margin-left: 1rem;
+            vertical-align: middle;
+        }
+        .github-link {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--link);
+            color: white;
+            border: 1px solid var(--link);
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+        .github-link:hover {
+            opacity: 0.85;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-link"><a href="index.html">← Back to index</a></div>
+    <div class="header">
+        <h1>tac.core.identity_manager <span class="version-badge">v1.0.0</span></h1>
+        <p>Provides consistent identity creation, validation, and management APIs. An "identity" represents a user with separate NFC and RFID credentials. NFC cards are high-security (require physical tap), while RFID badges are lower-security (can be scanned at distance).</p>
+        <div class='metadata'> Author: Twijn • License: MIT</div>
+        <a href="https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua" class="github-link" target="_blank">View on GitHub →</a>
+    </div>
+    <h2>Examples</h2>
+    <pre><code class='language-lua'>-- In your extension:
+function MyExtension.init(tac)
+    -- Create an identity with both NFC and RFID
+    local identity, err = tac.identityManager.createIdentity({
+        name = "John Doe",
+        tags = {"tenant.1", "vip"},
+        nfcEnabled = true,
+        rfidEnabled = true,
+        maxDistance = 3.0  -- Max RFID scan distance
+    })
+    
+    -- Create a subscription identity
+    local subIdentity, err = tac.identityManager.createSubscriptionIdentity({
+        username = "player1",
+        duration = 30,
+        slot = "tenant.premium",
+        nfcEnabled = true,
+        rfidEnabled = false
+    })
+    
+    -- Renew an identity
+    tac.identityManager.renewIdentity("tenant_1_player1", 30)
+    
+    -- Get identity info
+    local info, err = tac.identityManager.getIdentityInfo("tenant_1_player1")
+    if info then
+        print("Identity expires in " .. (info.timeUntilExpiration / 86400000) .. " days")
+    end
+    
+    -- Regenerate RFID data for an identity
+    tac.identityManager.regenerateRfid("tenant_1_player1")
+end</code></pre>
+    <h2>Functions</h2>
+    <div class='function'>
+        <h3><code>MyExtension.init()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L15' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>In your extension:</p>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.createIdentity(options)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L94' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Create a new identity with standard validation and logging  Creates an identity with separate NFC and RFID credentials. NFC data is the primary identifier, RFID data is a separate scannable token.  - id (string, optional): Identity ID (auto-generated if not provided) - name (string, required): Display name for the identity - tags (table, required): Array of access tags - nfcEnabled (boolean, optional): Enable NFC access (default: true) - rfidEnabled (boolean, optional): Enable RFID access (default: true) - nfcData (string, optional): NFC card data (auto-generated if not provided) - rfidData (string, optional): RFID badge data (auto-generated if not provided) - maxDistance (number, optional): Max RFID scan distance (default: nil = use door setting) - expiration (number, optional): UTC epoch timestamp when identity expires - username (string, optional): Username associated with identity (used in ID generation) - prefix (string, optional): Prefix for auto-generated ID - createdBy (string, optional): Who/what created the identity (default: "system") - metadata (table, optional): Additional custom data - logMessage (string, optional): Custom log message</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>options</code> (table): Identity creation options:</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string|nil Error message if creation failed</div>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.createSubscriptionIdentity(options)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L186' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Create a subscription identity (with expiration)  Specialized function for creating time-limited subscription identities. Commonly used by ShopK integration for selling temporary access.  - username (string, required): Username of the subscriber - duration (number, required): Subscription duration in days - slot (string, required): Access level/slot (becomes the identity tag) - nfcEnabled (boolean, optional): Enable NFC access (default: true) - rfidEnabled (boolean, optional): Enable RFID access (default: true) - maxDistance (number, optional): Max RFID scan distance - createdBy (string, optional): Creator identifier (default: "shopk") - purchaseValue (number, optional): Purchase price for metadata - transactionId (string, optional): Transaction ID for metadata - logMessage (string, optional): Custom log message</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>options</code> (table): Subscription identity options:</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string|nil Error message if creation failed</div>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.renewIdentity(identityId, additionalDuration, options)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L251' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Renew an existing identity  Extends the expiration date of an existing identity by the specified duration. Updates renewal metadata and logs the renewal event.  - renewedBy (string, optional): Who renewed the identity (default: "system") - transactionId (string, optional): Transaction ID for metadata - logMessage (string, optional): Custom log message</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>identityId</code> (string): ID of the identity to renew</li>
+                <li><code>additionalDuration</code> (number): Days to add to current expiration</li>
+                <li><code>options</code> (table): Optional renewal options:</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string|nil Error message if renewal failed</div>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.regenerateRfid(identityId)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L307' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Regenerate RFID data for an identity  Creates a new RFID token for the identity, invalidating the old one. Useful if an RFID badge is lost or compromised. </p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>identityId</code> (string): ID of the identity</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string|nil Error message if regeneration failed</div>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.setNfcData(identityId, nfcData)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L349' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Set NFC data for an identity  Associates NFC card data with an identity. Called after writing an NFC card. </p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>identityId</code> (string): ID of the identity</li>
+                <li><code>nfcData</code> (string): The NFC card data</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string|nil Error message if update failed</div>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.setRfidData(identityId, rfidData)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L390' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Set RFID data for an identity  Associates RFID badge data with an identity. Useful when reprogramming RFID cards using the server writer. </p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>identityId</code> (string): ID of the identity</li>
+                <li><code>rfidData</code> (string): The RFID badge data</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string|nil Error message if update failed</div>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.findByNfc(nfcData)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L431' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Look up identity by NFC data </p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>nfcData</code> (string): The NFC card data</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> table|nil Identity data if found, nil otherwise</div>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.findByRfid(rfidData)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L444' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Look up identity by RFID data </p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>rfidData</code> (string): The RFID badge data</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> table|nil Identity data if found, nil otherwise</div>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.getIdentityInfo(identityId)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L457' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get identity status and info  Retrieves comprehensive information about an identity including expiration status. Returns structured data with calculated fields like isExpired and timeUntilExpiration.  - id (string): Identity ID - name (string): Identity display name - tags (table): Access tags array - nfcEnabled (boolean): Whether NFC is enabled - rfidEnabled (boolean): Whether RFID is enabled - hasNfcData (boolean): Whether NFC card data is set - hasRfidData (boolean): Whether RFID badge data is set - maxDistance (number|nil): Max RFID scan distance - created (number): Creation timestamp - createdBy (string): Creator identifier - isExpired (boolean): Whether identity is currently expired - timeUntilExpiration (number|nil): Milliseconds until expiration (nil if no expiration) - expiration (number|nil): Expiration timestamp if set - metadata (table): Custom metadata</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>identityId</code> (string): ID of the identity to query</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string|nil Error message if identity not found</div>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.isValidIdentityId(identityId)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L515' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Validate identity ID format  Checks if an identity ID meets basic format requirements (non-empty string). </p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>identityId</code> (any): Value to validate as an identity ID</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> boolean True if valid identity ID format</div>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.canAccess(identityId, accessMethod)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L526' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Check if identity is valid for a specific access method </p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>identityId</code> (string): Identity ID</li>
+                <li><code>accessMethod</code> (string): "nfc" or "rfid"</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string|nil Error message if not valid</div>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.updateIdentity(identityId, updates)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L566' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Update identity settings (enable/disable access methods, distance, etc.) </p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>identityId</code> (string): Identity ID</li>
+                <li><code>updates</code> (table): Fields to update (nfcEnabled, rfidEnabled, maxDistance, tags, name)</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string|nil Error message if update failed</div>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.getAll()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L620' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get all identities </p>
+        <div class='returns'><strong>Returns:</strong> table All identities</div>
+    </div>
+    <div class='function'>
+        <h3><code>identityManager.deleteIdentity(identityId)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/core/identity_manager.lua#L627' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Delete an identity </p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>identityId</code> (string): Identity ID</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string|nil Error message if failed</div>
+    </div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-lua.min.js"></script>
+</html>

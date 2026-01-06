@@ -155,8 +155,8 @@
 <body>
     <div class="back-link"><a href="index.html">← Back to index</a></div>
     <div class="header">
-        <h1>tac.init <span class="version-badge">v1.4.3</span></h1>
-        <p>The main package interface for the TAC access control system. This module provides the core functionality for managing card-based access control, including extension management, command registration, hooks, and background process management.</p>
+        <h1>tac.init <span class="version-badge">v2.0.0</span></h1>
+        <p>The main package interface for the TAC access control system. This module provides the core functionality for managing identity-based access control, including extension management, command registration, hooks, and background process management. Identities support both NFC (secure, requires physical tap) and RFID (proximity-based, less secure) access methods with distance limits.</p>
         <div class='metadata'> Author: Twijn • License: MIT</div>
         <a href="https://github.com/Twijn/tac/blob/main/tac/init.lua" class="github-link" target="_blank">View on GitHub →</a>
     </div>
@@ -181,7 +181,7 @@ local MyExtension = {
 
 function MyExtension.init(tac)
     -- Access TAC functionality
-    local cards = tac.cards.getAll()
+    local identities = tac.identities.getAll()
     tac.logger.logAccess({...})
     
     -- Load other extensions
@@ -195,7 +195,7 @@ return MyExtension</code></pre>
     <h2>Functions</h2>
     <div class='function'>
         <h3><code>TAC.new(config)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L65' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L71' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Initialize TAC with configuration  Creates a new TAC instance with the provided configuration. This is the main entry point for setting up the access control system. </p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -207,7 +207,7 @@ return MyExtension</code></pre>
     </div>
     <div class='function'>
         <h3><code>instance.registerExtension(name, extension)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L125' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L132' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Register an extension  Registers a TAC extension module. If the extension has an init function, it will be called immediately with the TAC instance. Extensions can register commands, hooks, and background processes. </p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -219,7 +219,7 @@ return MyExtension</code></pre>
     </div>
     <div class='function'>
         <h3><code>instance.registerCommand(name, commandDef)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L141' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L148' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Register a command  Registers a new command that can be executed from the TAC command prompt. Commands can include autocompletion and help text.  - description (string): Brief description of the command - complete (function): Autocomplete function(args) -> suggestions - execute (function): Execution function(args, d) where d has .mess() and .err()</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -231,7 +231,7 @@ return MyExtension</code></pre>
     </div>
     <div class='function'>
         <h3><code>instance.addHook(hookName, callback)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L156' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L163' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Add a hook  Registers a callback function for a specific hook point in TAC's execution. Multiple callbacks can be registered for the same hook.  Available hooks: - beforeAccess: Called before access check (card, door, data, side) - afterAccess: Called after access check (granted, matchReason, card, door) - beforeCommand: Called before command execution (commandName, args) - afterCommand: Called after command execution (commandName, args, success) - beforeShutdown: Called before TAC shuts down () </p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -243,7 +243,7 @@ return MyExtension</code></pre>
     </div>
     <div class='function'>
         <h3><code>instance.registerBackgroundProcess(name, processFunction)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L177' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L184' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Register a background process  Registers a function to run in parallel with the main TAC event loop. Background processes are useful for monitoring, periodic tasks, or maintaining connections to external services. </p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -255,7 +255,7 @@ return MyExtension</code></pre>
     </div>
     <div class='function'>
         <h3><code>instance.disableBackgroundProcess(name)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L196' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L203' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Disable a background process  Marks a registered background process as disabled, preventing it from running. The process will not be started until re-enabled. </p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -267,7 +267,7 @@ return MyExtension</code></pre>
     </div>
     <div class='function'>
         <h3><code>instance.enableBackgroundProcess(name)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L215' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L222' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Enable a background process  Re-enables a previously disabled background process, allowing it to run. </p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -279,7 +279,7 @@ return MyExtension</code></pre>
     </div>
     <div class='function'>
         <h3><code>instance.getProcessStatus(name)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L233' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L240' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Get process status  Returns status information for a specific background process or all processes.  - status (string): Current status ("registered", "running", "disabled", etc.) - startTime (number|nil): When process started - lastError (string|nil): Last error message if failed - restartCount (number): Number of times process has restarted</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -291,7 +291,7 @@ return MyExtension</code></pre>
     </div>
     <div class='function'>
         <h3><code>instance.executeHooks(hookName)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L252' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L259' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Execute hooks  Triggers all registered callbacks for a specific hook point. If any callback returns false, the hook execution stops and returns false with an optional message. </p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -303,7 +303,7 @@ return MyExtension</code></pre>
     </div>
     <div class='function'>
         <h3><code>instance.registerExtensionSettings(extensionName, settingsConfig)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L278' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L285' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Register extension settings requirements  Declares settings that an extension requires. TAC will prompt for missing settings when the extension is loaded.  - title (string, optional): Form title for settings prompt - required (table): Array of setting definitions, each with: - key (string): Settings key to store value - label (string): Display label in form - type (string): "text", "number", "select", or "peripheral" - default (any, optional): Default value - validate (function, optional): Validation function - options (table, for "select"): Array of options - filter (string, for "peripheral"): Peripheral type filter</p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -315,7 +315,7 @@ return MyExtension</code></pre>
     </div>
     <div class='function'>
         <h3><code>instance.checkExtensionSettings(d)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L299' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L306' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Check for missing extension settings and prompt if needed  Validates that all required extension settings are configured. If any are missing, prompts the user with a form to enter them. </p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -326,13 +326,13 @@ return MyExtension</code></pre>
     </div>
     <div class='function'>
         <h3><code>instance.getServerNfc()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L370' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L373' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Get server NFC reader peripheral  Returns the configured server NFC reader peripheral. </p>
         <div class='returns'><strong>Returns:</strong> table|nil Server NFC reader peripheral, or nil if not configured</div>
     </div>
     <div class='function'>
         <h3><code>instance.require(extensionName)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L384' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L387' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Require an extension  Safely loads and returns an extension by name. Returns the extension's exported API or nil if not loaded. </p>
         <div class='params'>
             <strong>Parameters:</strong>
@@ -343,28 +343,43 @@ return MyExtension</code></pre>
         <div class='returns'><strong>Returns:</strong> string|nil Error message if extension not available</div>
     </div>
     <div class='function'>
+        <h3><code>instance.nfcAccessLoop()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L404' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Main access control loop (NFC) Listens for NFC card scans and processes access Uses debouncing to prevent multiple rapid scans</p>
+    </div>
+    <div class='function'>
+        <h3><code>instance.rfidAccessLoop()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L672' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>RFID access control loop Periodically scans RFID readers and processes access Supports distance limits from both doors and identities</p>
+    </div>
+    <div class='function'>
+        <h3><code>instance.serverNfcMonitorLoop()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L1082' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Server NFC monitor loop Listens for NFC scans on the server NFC reader and displays card/identity info on the server monitor Provides buttons to regenerate NFC/RFID credentials</p>
+    </div>
+    <div class='function'>
         <h3><code>instance.accessLoop()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L401' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
-        <p>Main access control loop</p>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L1572' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Combined access control loop (backwards compatible) Runs both NFC and RFID access loops in parallel, plus server monitor</p>
     </div>
     <div class='function'>
         <h3><code>instance.commandLoop()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L505' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L1607' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Command line interface loop</p>
     </div>
     <div class='function'>
         <h3><code>instance.start()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L577' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L1673' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Start the TAC system</p>
     </div>
     <div class='function'>
         <h3><code>instance.shutdown()</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L680' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L1761' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Shutdown the TAC system gracefully</p>
     </div>
     <div class='function'>
         <h3><code>TAC.loadExtensions(instance, options)</code></h3>
-        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L697' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/init.lua#L1774' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
         <p>Load extensions from extensions directory Load extensions from directory  Discovers and loads all extensions using the extension loader system. Handles dependencies, errors gracefully, and provides detailed feedback. </p>
         <div class='params'>
             <strong>Parameters:</strong>

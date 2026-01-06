@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tac.lib.monitor_buttons - TAC Documentation</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #1a1a1a;
+            --link: #0066cc;
+            --border: #e0e0e0;
+            --code-bg: #f5f5f5;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1a1a1a;
+                --text: #e0e0e0;
+                --link: #4d9fff;
+                --border: #333333;
+                --code-bg: #2a2a2a;
+            }
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+        }
+        .header p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            opacity: 0.9;
+        }
+        .metadata {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 0.5rem;
+        }
+        h2 {
+            margin-top: 3rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 1.8rem;
+        }
+        h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 1.3rem;
+        }
+        code {
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        .function:not(.token) {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+        .function h3 {
+            margin-top: 0;
+        }
+        .function > p {
+            margin: 1rem 0;
+            line-height: 1.7;
+        }
+        .params, .returns {
+            margin-top: 1rem;
+        }
+        .params ul, .returns ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .params li, .returns li {
+            padding: 0.5rem 0;
+            padding-left: 1rem;
+            border-left: 3px solid var(--border);
+            margin: 0.25rem 0;
+        }
+        a {
+            color: var(--link);
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .back-link {
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+        .version-badge {
+            display: inline-block;
+            background: #2a3540;
+            color: #8b949e;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.75em;
+            font-weight: 500;
+            margin-left: 1rem;
+            vertical-align: middle;
+        }
+        .github-link {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--link);
+            color: white;
+            border: 1px solid var(--link);
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+        .github-link:hover {
+            opacity: 0.85;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-link"><a href="index.html">← Back to index</a></div>
+    <div class="header">
+        <h1>tac.lib.monitor_buttons <span class="version-badge">v1.0.0</span></h1>
+        <p>Provides reusable button UI components for monitor-based interfaces. Used by server NFC monitor, ShopK access, and other monitor-based UIs.</p>
+        <div class='metadata'> Author: Twijn</div>
+        <a href="https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua" class="github-link" target="_blank">View on GitHub →</a>
+    </div>
+    <h2>Functions</h2>
+    <div class='function'>
+        <h3><code>monitor_buttons.create(monitor)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L33' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Create a new button manager for a monitor</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>monitor</code> (table): - the monitor peripheral</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> table - button manager instance</div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.getSize()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L45' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Get monitor dimensions</p>
+        <div class='returns'><strong>Returns:</strong> number, number - width and height</div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.clearButtons()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L51' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Clear all buttons</p>
+    </div>
+    <div class='function'>
+        <h3><code>manager.clear(bgColor)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L62' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Clear the monitor</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>bgColor</code> (number): - optional background color</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.centerText(y, text, color)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L70' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Center text on the monitor</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>y</code> (number): - line number</li>
+                <li><code>text</code> (string): - text to display</li>
+                <li><code>color</code> (number): - optional text color</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.drawText(x, y, text, color)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L83' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Draw text at position</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>x</code> (number): - X position</li>
+                <li><code>y</code> (number): - Y position</li>
+                <li><code>text</code> (string): - text to display</li>
+                <li><code>color</code> (number): - optional text color</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.drawLine(y, char, color)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L95' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Draw a horizontal line</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>y</code> (number): - line number</li>
+                <li><code>char</code> (string): - optional character to use (default "-")</li>
+                <li><code>color</code> (number): - optional color</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.drawHeader(y, text, bgColor, textColor)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L108' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Draw a header bar</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>y</code> (number): - line number</li>
+                <li><code>text</code> (string): - header text</li>
+                <li><code>bgColor</code> (number): - optional background color</li>
+                <li><code>textColor</code> (number): - optional text color</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.drawButton(x, y, width, height, text, action, bgColor, textColor)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L127' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Draw a button and register it</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>x</code> (number): - X position</li>
+                <li><code>y</code> (number): - Y position</li>
+                <li><code>width</code> (number): - button width</li>
+                <li><code>height</code> (number): - button height (default 3)</li>
+                <li><code>text</code> (string): - button text</li>
+                <li><code>action</code> (string): - action identifier returned when pressed</li>
+                <li><code>bgColor</code> (number): - optional background color</li>
+                <li><code>textColor</code> (number): - optional text color</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> table - button bounds {x1, y1, x2, y2}</div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.addButton(x, y, width, text, action, bgColor, textColor)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L176' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Draw a simple 3-row button (convenience method)</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>x</code> (number): - X position</li>
+                <li><code>y</code> (number): - Y position</li>
+                <li><code>width</code> (number): - button width</li>
+                <li><code>text</code> (string): - button text</li>
+                <li><code>action</code> (string): - action identifier</li>
+                <li><code>bgColor</code> (number): - optional background color</li>
+                <li><code>textColor</code> (number): - optional text color</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> table - button bounds</div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.isTouchInButton(x, y, button)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L189' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Check if a touch is within button bounds</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>x</code> (number): - touch X</li>
+                <li><code>y</code> (number): - touch Y</li>
+                <li><code>button</code> (table): - button with bounds</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> boolean</div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.setCallback(callback)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L199' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Set callback for button presses</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>callback</code> (function): - called with (action) when button pressed</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.setTimeout(seconds, callback)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L205' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Set a timeout for the current screen</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>seconds</code> (number): - timeout in seconds</li>
+                <li><code>callback</code> (function): - called when timeout occurs (optional, uses activeCallback with nil)</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.handleTouch(x, y)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L216' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Handle a touch event</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>x</code> (number): - touch X</li>
+                <li><code>y</code> (number): - touch Y</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> string|nil - action if button was pressed, nil otherwise</div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.handleTimer(timerID)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L235' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Handle a timer event</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>timerID</code> (number): - the timer that fired</li>
+            </ul>
+        </div>
+        <div class='returns'><strong>Returns:</strong> boolean - true if this was our timeout timer</div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.showCountdown(y, prefix, seconds)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L253' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Show a countdown timer on the monitor</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>y</code> (number): - line to show countdown on</li>
+                <li><code>prefix</code> (string): - text before countdown</li>
+                <li><code>seconds</code> (number): - starting seconds</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.showSuccess(title, message, details)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L264' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Show a success screen</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>title</code> (string): - success title</li>
+                <li><code>message</code> (string): - success message</li>
+                <li><code>details</code> (table): - optional key-value pairs to display</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.showError(title, message)</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L293' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Show an error screen</p>
+        <div class='params'>
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>title</code> (string): - error title</li>
+                <li><code>message</code> (string): - error message</li>
+            </ul>
+        </div>
+    </div>
+    <div class='function'>
+        <h3><code>manager.hasActiveButtons()</code></h3>
+        <a href='https://github.com/Twijn/tac/blob/main/tac/lib/monitor_buttons.lua#L337' target='_blank' style='font-size: 0.85em; opacity: 0.7;'>View source</a>
+        <p>Check if there are active buttons</p>
+        <div class='returns'><strong>Returns:</strong> boolean</div>
+    </div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-lua.min.js"></script>
+</html>
